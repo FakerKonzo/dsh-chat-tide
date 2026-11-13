@@ -1,6 +1,6 @@
 # Tide — chat memory with selective waking
 
-> A chat-memory plugin for DSH: conversations settle into facts and episodes, and the agent speaks only when it should.
+> A memory plugin for DSH: conversations settle into facts and episodes, and the agent speaks only when it should.
 > 中文：[README.md](./README.md)
 
 ## The problem
@@ -47,7 +47,7 @@ Package `dsh-chat-tide`, Loader row id `tide`.
 3. Edit `cordis.patch.yml`: replace `scope.peers`, `extract.provider` and `extract.model` with your own.
 4. On first run keep the waking route off, confirm ingestion and injection work, then enable routing.
 
-Data lives in `~/.dsh/tide/memory.db` (`dbFile` overrides it). On first start, a legacy `~/.dsh/chat-memory` directory is copied over and left in place.
+Data lives in `~/.dsh/tide/memory.db` (`dbFile` overrides it).
 
 ## Configuration
 

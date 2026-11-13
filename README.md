@@ -47,7 +47,7 @@ Tide 的做法是把记忆做成有出处的数据，把「要不要说话」做
 3. 改 `cordis.patch.yml`：把 `scope.peers`、`extract.provider`、`extract.model` 换成自己的。
 4. 首次运行只开入站镜像与注入，确认没问题再开路由。
 
-数据默认在 `~/.dsh/tide/memory.db`（`dbFile` 可改）。首次启动若发现旧的 `~/.dsh/chat-memory`，会复制过去且保留原目录。
+数据默认在 `~/.dsh/tide/memory.db`（`dbFile` 可改）。
 
 ## 配置
 

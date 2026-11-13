@@ -18,7 +18,7 @@ const ok = (cond, label, extra = '') => {
 
 // 1) 路由与数据目录
 ok(md.includes('/tide'), 'README 提到 /tide');
-ok(!/\/chat-memory/.test(md.split('.dsh/chat-memory').join('')), 'README 无旧路由（迁移说明除外）');
+ok(!/chat-memory/i.test(md), 'README 无旧命名');
 ok(md.includes('.dsh/tide') || md.includes('~/.dsh/tide'), 'README 的数据目录是 tide', (md.match(/\.dsh\/[a-z-]+/g) ?? []).join(','));
 
 // 2) 配置示例里的键必须在 config.js 里存在
