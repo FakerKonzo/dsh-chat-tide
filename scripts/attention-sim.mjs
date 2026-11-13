@@ -2,9 +2,10 @@
 import { DatabaseSync } from 'node:sqlite';
 import { getLoadablePath } from 'sqlite-vec';
 import { getEmbedder } from '../lib/embed.js';
+import { defaultDbFile } from '../lib/const.js';
 import { knn, distanceToCosine } from '../lib/vec.js';
 
-const db = new DatabaseSync(process.env.MEMORY_DB ?? `${process.env.USERPROFILE}/.dsh/chat-memory/memory.db`, { allowExtension: true });
+const db = new DatabaseSync(process.env.MEMORY_DB ?? defaultDbFile(), { allowExtension: true });
 db.loadExtension(getLoadablePath());
 
 const CASES = [

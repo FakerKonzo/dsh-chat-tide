@@ -26,7 +26,7 @@ const attId = addAttention(db, { kind: 'topic', label: '屋顶光伏方案', wei
 const cfg = { routing: { ambientReplyProbability: 0.1, high: 0.55, low: 0.42, margin: 0.02, l2Threshold: 0.45, exemplarThreshold: 0.5, budget: 1000 }, attention: { enabled: true, maxActive: 80, ttlDays: 30 }, context: { maxChars: 1200 }, features: { contextInject: true } };
 
 const html = renderStatusHtml(db, { dbFile: FILE, cfg });
-ok(html.includes('chat-memory'), '页面标题');
+ok(html.includes('Tide'), '页面标题');
 ok(html.includes('杭州') && html.includes('今天吃了三个饼'), '展示事实与经历');
 ok(html.includes('设置') && html.includes('routing.ambientReplyProbability'), '有设置区');
 ok(html.includes('屋顶光伏方案') && html.includes('不再关注'), '有关注点列表和退休按钮');

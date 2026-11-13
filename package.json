@@ -60,7 +60,7 @@
     "dsh",
     "dsh-plugin",
     "deepseek-harness",
-    "chat-memory",
+    "tide",
     "memory",
     "agent"
   ],

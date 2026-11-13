@@ -1,10 +1,11 @@
+import { defaultDbFile } from '../lib/const.js';
 // 记忆体检（只读，不调模型）：规则层 + 向量层，圈出该处理的条目。
 // 用法：node scripts/curate-report.mjs [--json]
 import { DatabaseSync } from 'node:sqlite';
 import { getLoadablePath } from 'sqlite-vec';
 
 const OWNER_ID = process.env.CM_OWNER ?? 'AAAA0000BBBB1111CCCC2222DDDD3333';
-const dbFile = process.env.MEMORY_DB ?? `${process.env.USERPROFILE}/.dsh/chat-memory/memory.db`;
+const dbFile = process.env.MEMORY_DB ?? defaultDbFile();
 const db = new DatabaseSync(dbFile, { allowExtension: true });
 let vecReady = false;
 try {

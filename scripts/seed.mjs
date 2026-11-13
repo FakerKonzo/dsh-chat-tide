@@ -15,7 +15,7 @@ const readJson = (p) => JSON.parse(readFileSync(p, 'utf8'));
 const wantAll = !args.has('--rules') && !args.has('--attention') && !args.has('--private');
 
 // 防手滑：不指定分类时，必须显式确认才动真实库
-const dbFile = process.env.MEMORY_DB ?? join(homedir(), '.dsh', 'chat-memory', 'memory.db');
+const dbFile = process.env.MEMORY_DB ?? defaultDbFile();
 const liveDb = dbFile.includes('.dsh');
 if (wantAll && liveDb && !args.has('--i-know')) {
   console.error('拒绝执行：这会往线上库写入预置。请加 --rules/--attention/--private 之一，或加 --i-know 明确确认。');

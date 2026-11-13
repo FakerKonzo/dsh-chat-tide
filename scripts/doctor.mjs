@@ -1,3 +1,4 @@
+import { defaultDbFile } from '../lib/const.js';
 // 运维体检（只读）：对一个现有库跑完整性、一致性与健康度检查
 // 用法：node scripts/doctor.mjs [--json]
 import { DatabaseSync } from 'node:sqlite';
@@ -5,7 +6,7 @@ import { getLoadablePath } from 'sqlite-vec';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 
-const dbFile = process.env.MEMORY_DB ?? join(homedir(), '.dsh', 'chat-memory', 'memory.db');
+const dbFile = process.env.MEMORY_DB ?? defaultDbFile();
 const db = new DatabaseSync(dbFile, { allowExtension: true });
 let vecReady = false;
 try {

@@ -10,14 +10,14 @@ const ok = (cond, label, extra = '') => {
 const session = (id, agentPreset, cwd = 'D:/x') => ({ id, agentPreset, cwd });
 
 // 1) preset 模式：只认列出的 preset
-const scope = { mode: 'preset', presets: ['chat-memory'] };
-ok(resolveSession(session('s1', 'chat-memory'), scope) !== null, '目标 preset 绑定成功');
+const scope = { mode: 'preset', presets: ['tide'] };
+ok(resolveSession(session('s1', 'tide'), scope) !== null, '目标 preset 绑定成功');
 ok(resolveSession(session('s2', 'standard'), scope) === null, '默认 preset 不绑定');
 ok(resolveSession(session('s3', undefined), scope) === null, '无 preset 的不绑定');
-ok(resolveSession(session('s4', 'chat-memory'), { mode: 'preset', presets: [] }) === null, '名单为空时不绑定任何人');
+ok(resolveSession(session('s4', 'tide'), { mode: 'preset', presets: [] }) === null, '名单为空时不绑定任何人');
 
 // 2) off 模式全不绑定
-ok(resolveSession(session('s1', 'chat-memory'), { mode: 'off' }) === null, 'off 模式不介入');
+ok(resolveSession(session('s1', 'tide'), { mode: 'off' }) === null, 'off 模式不介入');
 
 // 3) workspace 模式仍按目录匹配
 const ws = { mode: 'workspace', cwd: 'D:/x' };
@@ -29,7 +29,7 @@ ok(resolveSession(session('s1', 'standard', 'D:/x'), { mode: 'workspace', cwd: '
 ok(resolveSession(session('s1', 'standard'), { mode: 'all' }) !== null, 'all 模式绑定');
 
 // 5) 绑定里带 adapter/conversationKey
-const b = resolveSession(session('s1', 'chat-memory'), scope);
+const b = resolveSession(session('s1', 'tide'), scope);
 ok(b.adapter === 'local' && b.conversationKey === 'local:s1', '本地绑定结构正确', JSON.stringify(b));
 
 console.log(fail === 0 ? '\n全部通过' : `\n${fail} 项失败`);

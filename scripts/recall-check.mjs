@@ -3,9 +3,10 @@
 import { DatabaseSync } from 'node:sqlite';
 import { getLoadablePath } from 'sqlite-vec';
 import { searchEvents } from '../lib/fts.js';
+import { defaultDbFile } from '../lib/const.js';
 import { selectFactsForUsers, renderFactBlock, renderEventBlock } from '../lib/context.js';
 
-const dbFile = process.env.MEMORY_DB ?? `${process.env.USERPROFILE}/.dsh/chat-memory/memory.db`;
+const dbFile = process.env.MEMORY_DB ?? defaultDbFile();
 const query = process.argv[2] ?? '我今天吃了什么';
 const peer = process.argv[3] ?? process.env.CM_PEER ?? 'AAAA0000BBBB1111CCCC2222DDDD3333';
 const isC2c = peer.startsWith('AAAA0000');

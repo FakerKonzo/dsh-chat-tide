@@ -2,12 +2,13 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { openDatabase } from '../lib/db.js';
+import { defaultDbFile } from '../lib/const.js';
 
 const root = fileURLToPath(new URL('../presets/', import.meta.url));
 const generic = JSON.parse(readFileSync(root + 'rules/generic.json', 'utf8'));
 const genericKeys = new Set(generic.rules.map((r) => r.key));
 
-const db = openDatabase(process.env.MEMORY_DB ?? `${process.env.USERPROFILE}/.dsh/chat-memory/memory.db`);
+const db = openDatabase(process.env.MEMORY_DB ?? defaultDbFile());
 const rows = db
   .prepare(
     `SELECT f.canonical_key AS k, v.value AS val

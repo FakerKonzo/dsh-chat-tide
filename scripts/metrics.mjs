@@ -1,3 +1,4 @@
+import { defaultDbFile } from '../lib/const.js';
 // 指标快照（只读）：按设计 §16.2 的口径，能从库里算的都算出来。
 // 用法：node scripts/metrics.mjs
 import { DatabaseSync } from 'node:sqlite';
@@ -5,7 +6,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { getLoadablePath } from 'sqlite-vec';
 
-const dbFile = process.env.MEMORY_DB ?? `${process.env.USERPROFILE}/.dsh/chat-memory/memory.db`;
+const dbFile = process.env.MEMORY_DB ?? defaultDbFile();
 const db = new DatabaseSync(dbFile, { allowExtension: true });
 try { db.loadExtension(getLoadablePath()); } catch { /* 向量不可用 */ }
 

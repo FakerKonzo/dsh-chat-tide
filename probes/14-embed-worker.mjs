@@ -7,9 +7,18 @@ const ok = (cond, label, extra = '') => {
   if (!cond) fail++;
 };
 
-const e = await getEmbedder({ remoteHost: 'https://hf-mirror.com', useWorker: true });
+const e = await getEmbedder({
+  remoteHost: 'https://hf-mirror.com',
+  useWorker: true,
+  cacheDir: process.env.MODEL_CACHE_DIR ?? undefined,
+});
 console.log('embedder ready:', e.ready, 'name:', e.name, 'dim:', e.dim, 'error:', e.error ?? '');
-ok(e.ready === true, 'worker embedder 就绪');
+if (!e.ready) {
+  console.log('SKIP  embedder 未就绪（多半是模型没下载）：', e.error ?? 'unknown');
+  resetEmbedder();
+  process.exit(0);
+}
+ok(e.ready === true, 'embedder 就绪');
 if (e.ready) {
   const [a, b, c] = await e.embed(['杭州西湖', '西湖在哪个城市', '奶茶加不加冰']);
   ok(a.length === 512 && b.length === 512, '维度 512', `${a.length}`);

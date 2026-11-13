@@ -1,140 +1,107 @@
 # Tide — 聊天记忆与选择性接茬
 
-<img src="./assets/icon.png" width="96" alt="Tide">
-
+> 给 DSH 的聊天记忆插件：把对话沉淀成事实与经历，在合适的时候才开口。
 > English: [README.en.md](./README.en.md)
 
-按 `docs/聊天 Agent 记忆与主动消息接收系统设计v2.0.md` 实现。
+## 它解决什么
 
-## 现在做到哪（2026-11-08）
+聊天机器人常见两种坏状态：记不住，或者什么都接。
 
-**当前启用状态**：按 peer 白名单上线（群聊与主人私聊生效，其余会话零介入）；入站镜像、轮末抽取、上下文注入开启，路由按需开启。
+Tide 的做法是把记忆做成有出处的数据，把「要不要说话」做成可调的判定：
 
-**端到端已验**：workspace 作用域绑定真实会话跑通入站镜像 → 轮末抽取 → 事实入库 → FTS/向量写入；插件默认 scope=off，装完静默。
+- **记得住**：事实有证据等级、有有效期、有来源；经历按人、按场景分开存
+- **不乱说**：群聊先过筛选，关注点命中才直接开口；不在关注点内的按概率探索，开口与否交给模型
+- **可回退**：删除是软删并留审计；每次开机不会凭空改写数据
 
+## 七个步骤
 
-**阶段零 4/5 通过**（sqlite-vec、bigram FTS5、embedding、存储层），
-第 5 项（`agent/pre-step` 行序）需要装进 profile 才能验，留到装包时一起做。
+```
+① 入站镜像 → ② 作用域判定 → ③ 接茬判定 → ④ 上下文注入
+                                      → ⑤ 模型回合 → ⑥ 记忆抽取 → ⑦ 巡检
+```
 
-**阶段一代码已落地并装包（scope=off 静默态）**：
-
-| 模块 | 内容 | 本地自测 |
+| 步骤 | 做什么 | 代码 |
 |---|---|---|
-| `lib/db.js` | schema/迁移/事务（libsqlite，`allowExtension`） | ✅ |
-| `lib/fts.js` | bigram 分词 + FTS5 检索 | ✅ 6/6 两字词 |
-| `lib/vec.js` | sqlite-vec 加载、vec0 读写、KNN | ✅ 往返/覆盖/删除 |
-| `lib/facts.js` | 证据分级、时间仲裁、CAS、插入竞态重试、冲突、确认、删除 | ✅ 18 项 |
-| `lib/events.js` | 入站镜像、判重、事件追加（审计事件不进索引） | ✅ |
-| `lib/egress.js` | generation 状态机、`llm/stream` 文本挂起 | ✅ 7 项 |
-| `lib/embed.js` | transformers 惰性加载、降级 | ✅ 探针 |
-| `lib/scope.js` | QQ 会话→peer 映射、作用域过滤、发送者解析 | 待宿主验证 |
-| `lib/extract.js` | 轮末抽取、证据分级、JSON 容错 | ✅ 11 项 |
-| `lib/context.js` | 事实快照选取/渲染、增量块、注入消息 | ✅ 10 项 |
-| `lib/janitor.js` | 待确认超时、冲突报告、向量积压 | ✅ |
-| `lib/route.js` | 标签推断、阈值判定、预算/熔断分标注 | ✅ 24 项 |
-| `lib/silence.js` | B 禁言、C 临时覆盖（30 分钟硬上限、到期自取消） | ✅ |
-| 向量管线 | 事实/事件写入时embedding → vec0；L2 距离→余弦；阈值按实测校准 | ✅ 6 项 |
-| `lib/exemplar.js` | 示例库（人工审核才入库）、向量匹配 | ✅ |
-| `lib/budget.js` | 固定窗口预算、超限记 budget_skipped、过期窗口清理 | ✅ |
-| `lib/merge.js` | 多跳候选合并（层级+时间仲裁，不把推测当事实） | ✅ 17 项 |
-| `lib/conflict.js` | 冲突落定与未解决列表 | ✅ |
-| `lib/circuit.js` | 连续失败熔断、冷却半开、成功关闭（与预算跳过分开） | ✅ 10 项 |
-| `lib/embed-worker.mjs` | worker 线程跑 ONNX（绕开宿主 CJS 钩子） | ✅ 宿主内验证 |
-| 迁移 | schema v3（exemplar / route_budget / vec_exemplar），实机已迁到 3 | ✅ |
-| `lib/index.js` | 插件入口：工具注册（scope=off 直接返回）、入站监听、轮末抽取、闸门 | 宿主加载已验证 |
+| ① 入站镜像 | 把消息原文落库，作为后续抽取的证据 | `lib/index.js`、`lib/events.js` |
+| ② 作用域 | 白名单 / 预设 / 工作区 / 全部，决定哪些会话参与 | `lib/scope.js` |
+| ③ 接茬判定 | 关注点向量命中 → 直接唤醒；否则按概率探索 | `lib/route-decision.js`、`lib/route.js` |
+| ④ 上下文注入 | 规则块 + 事实块 + 经历块，按增量给 | `lib/inject.js`、`lib/context.js` |
+| ⑤ 模型回合 | 宿主自己的回合，插件不接管 | —— |
+| ⑥ 记忆抽取 | 轮末抽事实 / 经历 / 关注点，失败重试 | `lib/extract.js` |
+| ⑦ 巡检 | 去重、过期、孤儿向量、关注点晋升与退休 | `lib/janitor.js` |
 
-## 下一步
+## 记忆的几条规矩
 
-1. 启用作用域（allowlist 一个 peer）后端到端验入站镜像、轮末抽取、出站闸门。
-2. 阶段三：ambient 感知待平台「接收全部群消息」开关；direct 路径已上线。
-3. 可选：把记忆能力收成独立预设（Host 瘦行 + 预设胖行）。
+- **事实键有命名空间**：`owner.*`、`other.*`、`pref.owner.*`、`todo.*`、`rule.*`、`self.*`、`rel.*`
+- **证据分等级**：`human_explicit` / `source_verifiable` / `agent_inferred`，轮末抽取只认前两档
+- **场景隔离**：事实记 `scope`（group / private / local），群聊默认拿不到私聊来源
+- **群聊分人**：按发言人分别取事实，渲染时带昵称，不同人的同名键不合并
+- **删除可回退**：软删 + `tombstone` 记原因；恢复靠数据文件，不靠撤销命令
 
-## 只读入口
+## 安装
 
-- 状态页：http://127.0.0.1:55535/tide （仅本机 Host，只读）
-- 体检：`node scripts/doctor.mjs`（完整性/索引对齐/孤儿向量/审计，只读）
-- 指标快照：`node scripts/metrics.mjs`（数据/路由/注入/最近经历）
-- 召回预演：`node scripts/recall-check.mjs "问句" <peer>`
-- 话题相关性：`node scripts/eval-topic.mjs`（真实记忆做语料，评估「群友聊到已知主题」能否召回）
-- 阈值标定：`node scripts/eval-route.mjs`（40 正反例，输出阈值/kNN/规则/融合四组 P/R/F1）
+包名 `dsh-chat-tide`，插件行 id 是 `tide`。
 
-## 消息处理流程（配置项里的「第 N 步」）
+1. 用插件管理器安装本包（或在 profile 里 `link:` 本目录）。
+2. **把 `dsh-chat-tide` 加进 profile 的 `package.json` → `dsh.profile.bundles`**。这一步漏了会出现「装了但不加载」。
+3. 改 `cordis.patch.yml`：把 `scope.peers`、`extract.provider`、`extract.model` 换成自己的。
+4. 首次运行只开入站镜像与注入，确认没问题再开路由。
 
-一条群消息从进来到变成记忆，经过七步；任何一步都可以在插件配置里关掉或调参。
+数据默认在 `~/.dsh/tide/memory.db`（`dbFile` 可改）。首次启动若发现旧的 `~/.dsh/chat-memory`，会复制过去且保留原目录。
 
-1. **入站镜像**（`features.ingest`）：所有消息先写进原始流水账，被拒绝的也写。这一步决定「以后能不能回溯」。
-2. **作用域检查**（`scope`）：只处理白名单/开放范围内的会话，其他一律不介入。
-3. **群聊初筛**（`features.routing`）：没 @ 的群消息走这里。分类 → 静默时段 → 预算 → 每日上限/冷却 → 向量 + 事实 + 关键词判定 → 关注点闸门 → 接茬概率。任何一关不过就 `reject`，零模型调用、零回复。
-4. **上下文注入**（`features.contextInject`）：通关的轮次才注入。顺序是规则块 → 事实块 → 经历块（增量）；窗口、条数、字符上限都在 `context.*`。
-5. **模型回合**：模型看到的就是上面三块加当前消息。
-6. **轮末抽取**（`features.writePipeline` + `extract.*`）：抽出事实/经历/关注点，按证据分级写入；三类可分别关。
-7. **巡检与保留**（`janitor` / `retention`）：过期待办、关注点漂移、垃圾事件、原始记录保留期。
+## 配置
 
-## 写入规范（给模型看，也是验收口径）
+分两层：配置文件（`cordis.patch.yml`）给结构性选项，插件详情页给运行时覆盖（写库，5 秒生效，不动配置文件）。
 
-一句话：**记得住、读得懂、找得到、删得掉**。
+设置页三组：开关、接茬判定、注入窗口。判定相关的主要是：
 
-- 键命名空间：主人 `owner.*`、别人 `other.*`、偏好 `pref.owner.*`/`pref.other.*`、待办 `todo.owner.*`/`todo.other.*`、规矩 `rule.*`、助手自己 `self.*`、关系 `rel.*`；别用昵称当键
-- `subtype` 选对：`profile` 资料 / `preference` 偏好 / `todo` 待办 / `rule` 规矩 / `self` 关于助手自己 / `relation` 人际关系
-- `rule`：常驻注入、单独成块，不参与唤醒；值要能独立读懂，别带「【来源:…】」这类搬运标签
-- `self`：助手自己的属性、计划、愿望。`entityId` 固定写 `assistant`，别记成主人
-- `value` 只写事实本身：不混计划、打算、做法（生日就写日期；计划另开 `todo`）
-- 值必须有对象：缺主语、缺宾语的碎片（「精修」「晚上修一下」）不记
-- 证据等级：本人第一人称原话 `human_explicit`；可核转述 `source_verifiable`；自己归纳 `agent_inferred`
-- 经历（`events`）要带发言人，群聊尤其要——不然分不清谁说的
-- 删除走软删并写 `tombstone` 审计；删 `human_explicit` 需要 `confirm:true` 并说明 `reason`
+| 键 | 默认 | 含义 |
+|---|---|---|
+| `routing.attentionThreshold` | 0.5 | 关注点向量命中阈值 |
+| `routing.attentionMargin` | 0.04 | 命中还要跟第二名拉开多少 |
+| `routing.ambientReplyProbability` | 0.1 | 不在关注点内时探索开口的概率 |
+| `routing.l2Threshold` | 0.45 | 事实层单独判相关的门槛 |
+| `routing.maxWakesPerDay` | 20 | 每会话每日上限 |
+| `routing.minWakeIntervalMinutes` | 10 | 两次开口的最小间隔 |
+| `context.unifySessions` | false | 私聊与群聊是否共享同一份事实池 |
+| `context.groupExcludePrivate` | true | 群里是否屏蔽私聊来源 |
 
-## 预置
+两个开关的关系：群聊要看到私聊来源，需要 `unifySessions=true` **且** `groupExcludePrivate=false`；只开一个不生效。
 
-规则、关注点、推荐配置都在 [presets/](./presets/README.md)：通用规则可公开，私人规则留在本地
-（`presets/private.json`，已 gitignore）。导入用 `node scripts/seed.mjs`，幂等，只补缺。
+## 运维
 
-## 发布
+```bash
+node scripts/doctor.mjs          # 只读体检：完整性、索引对齐、孤儿向量、审计
+node scripts/metrics.mjs         # 数据/路由/注入/最近经历快照
+node scripts/curate-report.mjs   # 记忆质量体检：重复、碎片、过期、越权
+node scripts/check-naming.mjs    # 名称一致性（路由/目录/日志/样式前缀）
+node scripts/check-dead-config.mjs  # 配置项是否真的被读取
+node scripts/check-docs.mjs      # 文档与代码是否一致
+node scripts/seed.mjs            # 导入预置规则与关注点（幂等）
+```
 
-见 [RELEASE.md](./RELEASE.md)：测试、脱敏、包元信息、仓库与 npm 的逐项清单。
+只读页面：`http://127.0.0.1:<端口>/tide`。
 
 ## 自检
 
 ```bash
-cd works/tide
-CM_PEERS=<群openid>,<私聊openid> node scripts/smoke.mjs
+node --version   # 需要 Node 22+（用 node:sqlite）
+node probes/01-sqlite-vec.mjs   # 依赖与向量能力
+for f in probes/*.mjs; do node "$f"; done
 ```
 
-只读，打印 schema 版本、白名单绑定、各表计数、最近 QQ 入站、向量积压与 embed 日志时间。
+共 38 个探针，每个自带临时数据库，不碰真实数据。01–03 是能力探针（打印结论），其余断言通过/失败。
 
-## 结构
+## 预置
 
-```
-lib/          插件源码（db/fts/vec/facts/events/egress/embed/scope/index）
-probes/       阶段零探针与本地自测（不进产物）
-cordis.patch.yml  bundle 补丁（插一行，scope 默认 off）
-probe_report.md   探针结论
-```
+规则、关注点、推荐配置在 [presets/](./presets/README.md)。通用规则可公开，私人规则留在 `presets/private.json`（已 gitignore，打包时剔除）。
 
-## 关键环境事实
+## 已知边界
 
-- `node:sqlite` 载入扩展必须 `{ allowExtension: true }`。
-- `vec0` 主键必须 `BigInt` 绑定；向量参数必须 `Uint8Array`。
-- 模型走 `HF_ENDPOINT=https://hf-mirror.com`，量化 `q8`，512 维；冷启 82s，推理 P50 21ms。
-- 余弦整体偏低（相关 0.32–0.43，不相关 0.25–0.37），margin 可小到 0.013 → 阈值以绝对分为主，别照搬 0.75/0.8；BGE 查询指令前缀在短句上更差，别默认加。
-- 依赖安装用 `npm install --ignore-scripts`（沙箱里生命周期脚本 EPERM），npm cache 指到工作区内。
-- 入站 msgId：平台有（`ROBOT1.0_…`），但官方 QQ 插件不透传，插件层看不到；去重键已做成可插拔，透传后零改动升级。
-
-## 与预设的关系
-
-- 本插件是 **Host 级 bundle 行**（`chat-memory`），安装本身不修改任何 agent preset，默认预设（standard / ptc / minimal / cordis）不受影响。
-- `scope.mode` 支持 `off / all / allowlist / workspace / preset`：
-  - `allowlist`：只对指定 QQ peer 生效（推荐给 QQ 机器人）；
-  - `preset`：只对 `agentPreset` 命中 `scope.presets` 的会话生效（默认预设天然被排除）；
-  - `workspace`：按会话工作目录匹配。
-- 工具可见性只是 UI 层，**执行前统一过绑定校验**，作用域外一律返回 `out-of-scope`。
-- 若要把记忆能力打包成**独立预设**（在预设列表里可选），需要新增 preset 声明并把工具/注入/路由挂进预设；出站闸门仍须留在 Host（`llm/stream` 是根作用域事件）。这一步尚未做，按需再定。
-
-## 约定
-
-- 模型权重放 `D:\Cache\chat-memory-models\`（探针期因沙箱限制暂放 `.cache/`），不进仓库。
-- `node_modules/`、`.cache/`、`.npm-cache/` 不进仓库。
-- 作用域默认 `off`：装完不介入任何会话，工具也不出现，需显式配置 peer 白名单。
+- 探索概率的默认值来自经验，需要按自己的群调
+- 关注点需要真实对话积累，空库时它不会主动开口
+- 图片语义缓存只有模型看过图之后才会写入
+- 向量模型首次运行需要下载（约 25–30MB），冷启动慢
 
 ## 许可
 
