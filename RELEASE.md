@@ -45,5 +45,5 @@ Run through this before tagging the first public release. Nothing here touches a
 ## 7. After release
 
 - [ ] Install from the published artifact, run one real conversation, confirm the config page and
-      `/chat-memory` respond
+      `/tide` respond
 - [ ] Record the schema version shipped; note the migration path for existing databases

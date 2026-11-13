@@ -1,7 +1,7 @@
 # Tide bundle patch — copy and edit before installing.
 # The row id and the package name must match: <package>#<row id> keys the plugin's config page.
 - insert:
-    - id: chat-memory
+    - id: tide
       name: 'dsh-chat-tide'
       config:
         enabled: true

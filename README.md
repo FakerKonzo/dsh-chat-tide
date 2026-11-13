@@ -51,7 +51,7 @@
 
 ## 只读入口
 
-- 状态页：http://127.0.0.1:55535/chat-memory （仅本机 Host，只读）
+- 状态页：http://127.0.0.1:55535/tide （仅本机 Host，只读）
 - 体检：`node scripts/doctor.mjs`（完整性/索引对齐/孤儿向量/审计，只读）
 - 指标快照：`node scripts/metrics.mjs`（数据/路由/注入/最近经历）
 - 召回预演：`node scripts/recall-check.mjs "问句" <peer>`
@@ -96,7 +96,7 @@
 ## 自检
 
 ```bash
-cd works/chat-memory
+cd works/tide
 CM_PEERS=<群openid>,<私聊openid> node scripts/smoke.mjs
 ```
 

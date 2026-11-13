@@ -51,8 +51,8 @@ Key groups:
 
 ## Privacy and safety
 
-- The HTTP surface (`/chat-memory` and `/chat-memory/api/*`) accepts **loopback hosts only**.
-- Memory is stored locally in `~/.dsh/chat-memory/memory.db`; no network calls except the model
+- The HTTP surface (`/tide` and `/tide/api/*`) accepts **loopback hosts only**.
+- Memory is stored locally in `~/.dsh/tide/memory.db`; no network calls except the model
   requests you already configured and optional model downloads.
 - Injected memory is always fenced as *data, not instructions*.
 - Deletions are soft, audited via `tombstone`, and deleting user quotes requires explicit
