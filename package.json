@@ -13,6 +13,7 @@
     "lib",
     "assets",
     "presets",
+    "scripts",
     "cordis.patch.yml",
     "README.md",
     "README.en.md",
@@ -65,5 +66,8 @@
     "agent"
   ],
   "icon": "assets/icon.png",
+  "engines": {
+    "node": ">=22.5.0"
+  },
   "private": false
 }

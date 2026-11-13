@@ -2,7 +2,7 @@
 import { env, pipeline } from '@huggingface/transformers';
 import { fileURLToPath } from 'node:url';
 
-// 探针期把模型缓存放工作区（沙箱不允许写 D:\Cache）；正式运行再改到 D:\Cache
+// 模型缓存目录由 MODEL_CACHE_DIR 或 embedding.cacheDir 指定
 env.cacheDir = process.env.MODEL_CACHE_DIR ?? fileURLToPath(new URL('../.cache/models', import.meta.url));
 if (process.env.HF_ENDPOINT) {
   env.remoteHost = process.env.HF_ENDPOINT.replace(/\/+$/, '');

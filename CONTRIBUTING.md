@@ -6,21 +6,28 @@ Thanks for looking. Tide is small on purpose — please keep it that way.
 
 - `lib/` — the engine. Host half (`index.js`) plus the browser half (`client.js`) that renders the
   plugin's configuration page. `db.js` owns the schema; every migration is append-only.
+  `const.js` is the single source for the row id, route, data directory, log names and style prefix.
 - `presets/` — content, not code: rules, attention seeds, recommended configs. Generic presets ship;
   `presets/private.json` never does.
 - `probes/` — numbered regression suites. Each one builds its own throwaway database and asserts
   behaviour. They are the test suite; there is no separate framework.
-- `scripts/` — operator tooling: packaging, seeding, health report, metrics.
+- `scripts/` — operator tooling: packaging, seeding, health, metrics and consistency checks.
 
 ## Before opening a pull request
 
 ```bash
 npm install
 for f in probes/*.mjs; do node "$f" || echo "FAILED: $f"; done
+node scripts/check-naming.mjs
+node scripts/check-dead-config.mjs
+node scripts/check-docs.mjs
 ```
 
-All suites must pass. If you change the schema, add a migration to `lib/db.js` and a probe that
-covers it — do not edit an existing migration, since someone's database may already be past it.
+All suites and the three consistency checks must pass. `check-docs` fails when the README drifts
+from the code; `check-dead-config` fails when a declared configuration key is never read.
+
+If you change the schema, add a migration to `lib/db.js` and a probe that covers it — do not edit
+an existing migration, since someone's database may already be past it.
 
 ## Behaviour rules for contributions
 

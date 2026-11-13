@@ -39,13 +39,13 @@ const mkReq = (host, opts = {}) => ({
   text: async () => opts.body ?? '',
 });
 
-ok(isLocalRequest(mkReq('127.0.0.1:55535')) === true, '本机 Host 放行');
+ok(isLocalRequest(mkReq('127.0.0.1:18080')) === true, '本机 Host 放行');
 ok(isLocalRequest(mkReq('evil.example.com')) === false, '外部 Host 拒绝');
-ok((await res(mkReq('127.0.0.1:55535'))).status === 200, '本机 GET 200');
+ok((await res(mkReq('127.0.0.1:18080'))).status === 200, '本机 GET 200');
 ok((await res(mkReq('evil.example.com'))).status === 403, '外部 GET 403');
 
 // POST 设置
-const post = (body, host = '127.0.0.1:55535') => res(mkReq(host, { method: 'POST', body }));
+const post = (body, host = '127.0.0.1:18080') => res(mkReq(host, { method: 'POST', body }));
 
 let r = await post('action=set&key=routing.ambientReplyProbability&value=0.3');
 ok(r.status === 303, '保存设置返回 303');
