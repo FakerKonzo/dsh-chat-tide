@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "description": "Attention seeds. Attention entries live in vector space: when an incoming message is close enough to one of these topics, the agent may speak without a probability roll. Keep them few and concrete — a dozen well-chosen topics beat a hundred vague ones.",
+  "attention": [
+    { "label": "an ongoing project the owner is actively shipping", "weight": 0.8, "ttlDays": 60 },
+    { "label": "a commitment the owner made and has not closed", "weight": 0.7, "ttlDays": 45 },
+    { "label": "a recurring personal goal the owner tracks (training, study, health)", "weight": 0.5, "ttlDays": 30 },
+    { "label": "a decision the owner is still weighing and may want a second opinion on", "weight": 0.6, "ttlDays": 30 }
+  ]
+}

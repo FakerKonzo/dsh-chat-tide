@@ -1,0 +1,10 @@
+node_modules/
+.cache/
+.npm-cache/
+pkg/
+*.db
+*.log
+*.tgz
+private.json
+presets/private.json
+tmp/

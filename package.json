@@ -1,0 +1,69 @@
+{
+  "name": "dsh-chat-tide",
+  "version": "0.1.1",
+  "description": "Tide — chat memory and selective waking for DSH",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    "./client": "./lib/client.js",
+    ".": "./lib/index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "assets",
+    "presets",
+    "cordis.patch.yml",
+    "README.md",
+    "README.en.md",
+    "LICENSE"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "engines": {
+      "dsh": ">=0.2.2-rc.1 <0.4.0-0"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-renderer",
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-plugin-manager",
+        "@deepseek-ai/dsh-client-ui-primitives"
+      ]
+    }
+  },
+  "dependencies": {
+    "sqlite-vec": "^0.1.9",
+    "@huggingface/transformers": "3.7.6"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": ">=0.1.0",
+    "@deepseek-ai/dsh-tools": ">=0.1.0",
+    "@deepseek-ai/dsh-llm": ">=0.1.0",
+    "@deepseek-ai/schemastery": ">=0.1.0"
+  },
+  "license": "MIT",
+  "author": "FakerKonzo",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/FakerKonzo/dsh-chat-tide.git"
+  },
+  "homepage": "https://github.com/FakerKonzo/dsh-chat-tide#readme",
+  "bugs": {
+    "url": "https://github.com/FakerKonzo/dsh-chat-tide/issues"
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "chat-memory",
+    "memory",
+    "agent"
+  ],
+  "icon": "assets/icon.png",
+  "private": false
+}

@@ -1,0 +1,35 @@
+# Tide bundle patch — copy and edit before installing.
+# The row id and the package name must match: <package>#<row id> keys the plugin's config page.
+- insert:
+    - id: chat-memory
+      name: 'dsh-chat-tide'
+      config:
+        enabled: true
+        scope:
+          # off | all | qq | allowlist | workspace | preset | sessions
+          mode: 'allowlist'
+          peers:
+            - '<your-peer-openid-1>'
+            - '<your-peer-openid-2>'
+        embedding:
+          enabled: true
+          model: 'Xenova/bge-small-zh-v1.5'
+          dtype: 'q8'
+          cacheDir: ''
+          remoteHost: 'https://hf-mirror.com'
+        features:
+          ingest: true
+          writePipeline: true
+          egressGate: false
+          contextInject: true
+          routing: true
+          tools: true
+          writeTools: false
+        extract:
+          provider: '<your-llm-provider>'
+          model: '<your-llm-model>'
+          minChars: 6
+        context:
+          enabled: true
+          maxChars: 1200
+          eventLimit: 5

@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "description": "Recommended configuration profiles. Pick one as the row config; every key is optional and falls back to the plugin default.",
+  "profiles": {
+    "observe": {
+      "title": "Observe only",
+      "detail": "Record everything, inject nothing, never speak on its own. The safest first step: run for a week, then read the health report.",
+      "config": {
+        "features": { "ingest": true, "writePipeline": true, "contextInject": false, "routing": false, "tools": false },
+        "scope": { "mode": "all" }
+      }
+    },
+    "private-memory": {
+      "title": "Private chat memory",
+      "detail": "Remember and inject in one-to-one chats only. Direct messages always wake, so no probability tuning is needed.",
+      "config": {
+        "features": { "ingest": true, "writePipeline": true, "contextInject": true, "routing": false, "tools": true },
+        "scope": { "mode": "allowlist" },
+        "context": { "unifySessions": true }
+      }
+    },
+    "group-selectivity": {
+      "title": "Group with selective waking",
+      "detail": "Ambient group chatter only reaches the model when a topic matches attention, or when the exploration roll passes. Expect roughly one spontaneous reply per ten relevant messages until attention grows.",
+      "config": {
+        "features": { "ingest": true, "writePipeline": true, "contextInject": true, "routing": true, "tools": true },
+        "routing": { "attentionThreshold": 0.5, "attentionMargin": 0.04, "ambientReplyProbability": 0.1, "maxWakesPerDay": 20, "minWakeIntervalMinutes": 10 },
+        "context": { "groupExcludePrivate": true }
+      }
+    }
+  }
+}

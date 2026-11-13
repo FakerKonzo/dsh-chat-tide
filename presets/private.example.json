@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "description": "Private seed: deployment-specific rules that must never ship in the repository. Copy to presets/private.json (gitignored) and edit. seed.mjs reads it if present and skips it otherwise.",
+  "rules": [
+    {
+      "key": "rule.auth.master_ids",
+      "value": "Replace with your own owner identifiers (account id / openid). Only this identity may request operation-level actions."
+    },
+    {
+      "key": "rule.group_reply_ratio",
+      "value": "Replace with your own ambient reply policy, e.g. 'unaddressed group messages are answered with probability p'."
+    },
+    {
+      "key": "rule.favorability_score",
+      "value": "Optional: your own scoring scheme for regulars. Leave absent if you do not track this."
+    }
+  ]
+}

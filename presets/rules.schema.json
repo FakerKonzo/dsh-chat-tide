@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Tide rule presets",
+  "type": "object",
+  "required": ["version", "rules"],
+  "properties": {
+    "version": { "type": "integer", "minimum": 1 },
+    "description": { "type": "string" },
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["key", "value"],
+        "properties": {
+          "key": {
+            "type": "string",
+            "pattern": "^rule\\.[a-z0-9_.]+$",
+            "description": "Canonical key. Must live in the rule.* namespace; the same key replaces its previous version on --force."
+          },
+          "value": {
+            "type": "string",
+            "minLength": 4,
+            "maxLength": 600,
+            "description": "One self-contained rule. Do not reference other rules."
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
