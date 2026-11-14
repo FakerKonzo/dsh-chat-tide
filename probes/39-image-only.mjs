@@ -17,6 +17,8 @@ const ENVELOPE = `[小明 (${OPENID})] <@EEEE4444FFFF5555AAAA6666BBBB7777>`;
 ok(isImageOnly('- Image: C:/x/a.jpg'), '裸图片占位');
 ok(isImageOnly(`${ENVELOPE} - Image: C:/x/a.jpg`), '带信封与 @ 的图片');
 ok(isImageOnly(`${ENVELOPE} - Image: C:/x/a.jpg (@you)`), '带 (@you) 的图片');
+ok(isImageOnly(`- Image: C:/x/a.jpg\n\n${ENVELOPE} [图片]`), 'QQ 带 [图片] 占位仍算纯图片');
+ok(isImageOnly(`- Image: C:/x/a.jpg\n\n${ENVELOPE} [表情]`), '带 [表情] 占位也算纯媒体');
 ok(!isImageOnly(`${ENVELOPE} 这张怎么样\n- Image: C:/x/a.jpg`), '图片带文字不算纯图片');
 ok(!isImageOnly('今天吃了三个饼'), '普通消息不算图片');
 ok(!isImageOnly(''), '空消息');
