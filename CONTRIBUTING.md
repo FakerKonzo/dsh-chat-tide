@@ -39,3 +39,16 @@ an existing migration, since someone's database may already be past it.
 ## Commit style
 
 One change per commit, imperative summary, body explains the why rather than restating the diff.
+
+## Tooling
+
+| Command | Purpose |
+|---|---|
+| `npm test` | every probe plus the three consistency checks |
+| `node scripts/doctor.mjs` | read-only health check of an existing database |
+| `node scripts/metrics.mjs` | data, routing, injection and recent episodes snapshot |
+| `node scripts/curate-report.mjs` | memory quality: duplicates, fragments, expiry, scope violations |
+| `node scripts/check-naming.mjs` | route, directory, log and style consistency |
+| `node scripts/check-dead-config.mjs` | every declared configuration key is actually read |
+| `node scripts/check-docs.mjs` | the README matches the code |
+| `node scripts/seed.mjs` | import presets (idempotent) |
