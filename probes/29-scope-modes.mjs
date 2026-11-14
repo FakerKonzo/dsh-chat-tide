@@ -45,9 +45,8 @@ ok(resolveSession({ id: 'manual-3' }, { mode: 'off', sessionIds: ['manual-3'] })
 ok(resolveSession({ id: 'sub-1', origin: 'subagent' }, { mode: 'all' }) === null, '子代理默认跳过');
 ok(resolveSession({ id: 'sub-1', origin: 'subagent' }, { mode: 'all', includeSubagents: true })?.adapter === 'local', '可显式包含子代理');
 
-const allow = resolveSession({ id: sessionId }, { mode: 'allowlist', peers: [peer] });
-ok(allow?.adapter === 'qq', 'allowlist 命中');
-ok(resolveSession({ id: sessionId }, { mode: 'allowlist', peers: ['nope'] }) === null, 'allowlist 未命中');
+// allowlist 已移除：不再作为可选模式
+ok(resolveSession({ id: sessionId }, { mode: 'allowlist' }) === null, 'allowlist 不再生效');
 
 try { rmSync(prefsFile, { force: true }); } catch {}
 console.log(fail === 0 ? '\n全部通过' : `\n${fail} 项失败`);

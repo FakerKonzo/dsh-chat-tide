@@ -15,7 +15,7 @@
       "detail": "Remember and inject in one-to-one chats only. Direct messages always wake, so no probability tuning is needed.",
       "config": {
         "features": { "ingest": true, "writePipeline": true, "contextInject": true, "routing": false, "tools": true },
-        "scope": { "mode": "allowlist" },
+        "scope": { "mode": "follow" },
         "context": { "unifySessions": true }
       }
     },
