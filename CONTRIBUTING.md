@@ -17,10 +17,8 @@ Thanks for looking. Tide is small on purpose — please keep it that way.
 
 ```bash
 npm install
-for f in probes/*.mjs; do node "$f" || echo "FAILED: $f"; done
-node scripts/check-naming.mjs
-node scripts/check-dead-config.mjs
-node scripts/check-docs.mjs
+npm test          # 等价于 node scripts/run-checks.mjs --skip-model
+# 想连模型探针一起跑：node scripts/run-checks.mjs
 ```
 
 All suites and the three consistency checks must pass. `check-docs` fails when the README drifts

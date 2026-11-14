@@ -83,11 +83,12 @@ Read-only status page: `http://127.0.0.1:<port>/tide`.
 ## Tests
 
 ```bash
-node --version    # Node 22+ (uses node:sqlite)
+node --version    # Node 22.5+ (uses node:sqlite)
+npm test          # probes plus consistency checks, same as CI
 for f in probes/*.mjs; do node "$f"; done
 ```
 
-38 probes, each building its own temporary database. Probes 01–03 print capabilities; the rest assert.
+39 probes, each building its own temporary database. Probes 01–03 print capabilities; the rest assert.
 
 ## Presets
 

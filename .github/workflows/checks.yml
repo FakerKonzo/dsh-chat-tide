@@ -6,9 +6,17 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   checks:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -30,7 +38,12 @@ jobs:
 
       - name: Package contents
         run: |
-          npm pack --dry-run 2>&1 | tee pack.txt
-          if grep -E 'presets/private\.json|\.db$' pack.txt; then
-            echo "包内容里出现了私人文件"; exit 1
+          npm pack --dry-run 2>&1 | tee "$RUNNER_TEMP/pack.txt"
+          if grep -E 'presets/private\.json|[^/]\.db$' "$RUNNER_TEMP/pack.txt"; then
+            echo "包内容里出现了私人文件或数据库"
+            exit 1
+          fi
+          if ! grep -q 'lib/index.js' "$RUNNER_TEMP/pack.txt"; then
+            echo "包内容缺少入口文件"
+            exit 1
           fi

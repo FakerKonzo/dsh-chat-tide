@@ -85,12 +85,13 @@ node scripts/seed.mjs            # 导入预置规则与关注点（幂等）
 ## 自检
 
 ```bash
-node --version   # 需要 Node 22+（用 node:sqlite）
+node --version   # 需要 Node 22.5+（用 node:sqlite）
+npm test         # 一键跑全部探针与一致性检查（与 CI 同款）
 node probes/01-sqlite-vec.mjs   # 依赖与向量能力
 for f in probes/*.mjs; do node "$f"; done
 ```
 
-共 38 个探针，每个自带临时数据库，不碰真实数据。01–03 是能力探针（打印结论），其余断言通过/失败。
+共 39 个探针，每个自带临时数据库，不碰真实数据。01–03 是能力探针（打印结论），其余断言通过/失败。
 
 ## 预置
 

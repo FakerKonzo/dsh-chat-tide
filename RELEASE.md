@@ -10,6 +10,7 @@ Run through this before tagging a public release. Nothing here touches a live de
 - [ ] `node scripts/check-dead-config.mjs` — every declared configuration key is actually read
 - [ ] `node scripts/check-docs.mjs` — the README matches the code
 - [ ] `node scripts/doctor.mjs` against a copy of a real database — no `fail`
+- [ ] CI is green on both Node majors for the release commit
 - [ ] `node --check` every file under `lib/` (the exporter does this too)
 
 ## 2. Sanitisation
