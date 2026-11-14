@@ -1,0 +1,36 @@
+name: checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['22', '24']
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      # 模型相关的两个探针会下载约 30MB 权重，CI 里跳过；
+      # 其余探针自带临时数据库，不读写用户数据。
+      - name: Probes and consistency checks
+        run: node scripts/run-checks.mjs --skip-model
+
+      - name: Package contents
+        run: |
+          npm pack --dry-run 2>&1 | tee pack.txt
+          if grep -E 'presets/private\.json|\.db$' pack.txt; then
+            echo "包内容里出现了私人文件"; exit 1
+          fi
