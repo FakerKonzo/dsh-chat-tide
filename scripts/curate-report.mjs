@@ -138,10 +138,12 @@ add('人表缺昵称', '低', noNick.map((r) => ({ openid: String(r.openid).slic
 
 // 15) 事实缺场景（unknown 比例高说明来源链路断了）
 const unknownOther = all(
-  "SELECT canonical_key k FROM fact WHERE status='active' AND COALESCE(scope,'unknown')='unknown' AND subtype <> 'rule' AND user_id <> OWNER_ID",
+  "SELECT canonical_key k FROM fact WHERE status='active' AND COALESCE(scope,'unknown')='unknown' AND subtype <> 'rule' AND user_id <> ?",
+  OWNER_ID,
 );
 const unknownOwner = all(
-  "SELECT canonical_key k FROM fact WHERE status='active' AND COALESCE(scope,'unknown')='unknown' AND subtype <> 'rule' AND user_id = OWNER_ID",
+  "SELECT canonical_key k FROM fact WHERE status='active' AND COALESCE(scope,'unknown')='unknown' AND subtype <> 'rule' AND user_id = ?",
+  OWNER_ID,
 );
 add('他人事实场景未知', '高', unknownOther.map((r) => ({ 键: r.k })), '可能把私聊内容带进群聊');
 add('主人事实场景未知', '低', unknownOwner.map((r) => ({ 键: r.k })), '主人的事实在群里出现风险较低');
