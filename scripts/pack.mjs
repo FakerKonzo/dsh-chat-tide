@@ -19,7 +19,8 @@ cpSync(join(root, 'presets'), join(out, 'presets'), { recursive: true });
 rmSync(join(out, 'presets', 'private.json'), { force: true });
 
 const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
-delete pkg.scripts;
+// 只保留 test，方便安装后自检
+if (pkg.scripts?.test) pkg.scripts = { test: pkg.scripts.test }; else delete pkg.scripts;
 delete pkg.devDependencies;
 pkg.description = 'Tide — chat memory and selective waking for DSH (installable package)';
 writeFileSync(join(out, 'package.json'), JSON.stringify(pkg, null, 2) + '\n');

@@ -47,6 +47,9 @@
     "@deepseek-ai/dsh-llm": ">=0.1.0",
     "@deepseek-ai/schemastery": ">=0.1.0"
   },
+  "scripts": {
+    "test": "node scripts/run-checks.mjs --skip-model"
+  },
   "license": "MIT",
   "author": "FakerKonzo",
   "repository": {
