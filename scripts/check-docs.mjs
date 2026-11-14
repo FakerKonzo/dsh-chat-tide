@@ -7,6 +7,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(root, p), 'utf8');
 
 const md = read('README.md');
+const docsAll = md + '\n' + read('CONTRIBUTING.md') + '\n' + read('RELEASE.md');
 const config = read('lib/config.js');
 const consts = read('lib/const.js');
 
@@ -17,9 +18,9 @@ const ok = (cond, label, extra = '') => {
 };
 
 // 1) 路由与数据目录
-ok(md.includes('/tide'), 'README 提到 /tide');
+ok(docsAll.includes('/tide'), '文档里提到 /tide 路由');
 ok(!/chat-memory/i.test(md), 'README 无旧命名');
-ok(md.includes('.dsh/tide') || md.includes('~/.dsh/tide'), 'README 的数据目录是 tide', (md.match(/\.dsh\/[a-z-]+/g) ?? []).join(','));
+ok(docsAll.includes('.dsh/tide') || docsAll.includes('~/.dsh/tide'), '文档里的数据目录是 tide');
 
 // 2) 配置示例里的键必须在 config.js 里存在
 const fences = [...md.matchAll(/```(?:\w+)?\n([\s\S]*?)```/g)].map((m) => m[1]);

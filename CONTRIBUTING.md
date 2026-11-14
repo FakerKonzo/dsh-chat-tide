@@ -40,6 +40,12 @@ an existing migration, since someone's database may already be past it.
 
 One change per commit, imperative summary, body explains the why rather than restating the diff.
 
+## Local install
+
+Data lives in `~/.dsh/tide/memory.db`; the read-only page is `/tide` on the host port.
+
+When linking this repository into a profile for development, add `dsh-chat-tide` to the profile's `dsh.profile.bundles`. Without that entry the package is installed but never loaded, and the plugin page shows nothing.
+
 ## Tooling
 
 | Command | Purpose |

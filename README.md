@@ -7,95 +7,53 @@
 
 聊天机器人常见两种坏状态：记不住，或者什么都接。
 
-Tide 把记忆做成有出处的数据，把「要不要说话」做成可调的判定：事实有证据等级和有效期，经历按人按场景分开；群聊先过筛选，关注点命中才直接开口，其余按概率探索。
+Tide 让机器人记住你们聊过的事，并且只在真正该说话的时候开口——群里的闲聊不会句句都接，但聊到它在意的话题，它会主动搭话。记住的东西可以翻、可以改，删掉也有记录。
 
 ## 兼容与依赖
 
-| 项 | 要求 | 说明 |
-|---|---|---|
-| DSH | `>=0.2.2-rc.1 <0.4.0` | 只在 0.2.2-rc.1 上实机跑过；宿主升级后请先跑一次自检 |
-| Node | `>=22.5` | 用内置 `node:sqlite`，低于此版本没有该模块 |
-| `sqlite-vec` | 随包安装 | 向量检索；WASM/预编译由它自己选 |
-| `@huggingface/transformers` | 随包安装 | 本地向量模型，首次使用下载约 25–30MB |
-| Cordis / `dsh-llm` / `dsh-tools` / `schemastery` | 由宿主提供 | 已声明为可选 peer，不需要自己装 |
-| QQ 适配器 | 可选，`@tencent-connect/dsh-qqbot@0.5.5` | 群聊/私聊接茬依赖它；没有 QQ 也能用 `scope.mode: all` 记本地会话 |
+| 项 | 要求 |
+|---|---|
+| DSH | `>=0.2.2-rc.1 <0.3.0`，在 0.2.2-rc.1 与 0.2.2-rc.3 上实机跑过 |
+| Node | `>=22.5`（用到内置 `node:sqlite`） |
+| QQ 适配器 | 可选，实测 `@tencent-connect/dsh-qqbot@0.5.5`；没有它也能记本地会话，只是群聊接茬不会触发 |
 
-没有 QQ 适配器时，插件仍然可以记录与注入本地会话的记忆，只是「群聊接茬」这套判定不会被触发。
+其余依赖随包安装，不需要手动处理。首次使用会下载一个约 25–30MB 的本地向量模型。
 
-## 七个步骤
+## 它怎么工作
 
-```
-① 入站镜像 → ② 作用域判定 → ③ 接茬判定 → ④ 上下文注入
-                                      → ⑤ 模型回合 → ⑥ 记忆抽取 → ⑦ 巡检
-```
+1. **先记住**：聊天内容先落成原始记录，这时候还不会回复任何人。
+2. **再判断**：群消息来了，先看是不是在找它，再看这件事是不是它在意的。在意就直接接；不在意就按一个小概率试探，是否开口由模型自己决定。
+3. **带着记忆说话**：真要开口时，才把相关的规矩、事实和近期经历带进这一轮。平时不占上下文。
+4. **说完再沉淀**：一轮结束，从对话里提炼值得留下的事实、经历和关注点。
+5. **定期清理**：重复的合并、过期的退休、只在当时成立的改掉。
 
-| 步骤 | 做什么 | 代码 |
-|---|---|---|
-| ① 入站镜像 | 消息原文落库，作为抽取的证据 | `lib/index.js`、`lib/events.js` |
-| ② 作用域 | 白名单 / 预设 / 工作区 / 全部 | `lib/scope.js` |
-| ③ 接茬判定 | 关注点向量命中直接唤醒；否则按概率探索 | `lib/route-decision.js`、`lib/route.js` |
-| ④ 上下文注入 | 规则块 + 事实块 + 经历块，按增量给 | `lib/inject.js`、`lib/context.js` |
-| ⑤ 模型回合 | 宿主自己的回合，插件不接管 | — |
-| ⑥ 记忆抽取 | 轮末抽事实 / 经历 / 关注点，失败重试 | `lib/extract.js` |
-| ⑦ 巡检 | 去重、过期、孤儿向量、关注点退休 | `lib/janitor.js` |
-
-## 记忆的规矩
-
-- **事实键有命名空间**：`owner.*`、`other.*`、`pref.owner.*`、`todo.*`、`rule.*`、`self.*`、`rel.*`
-- **证据分等级**：`human_explicit` / `source_verifiable` / `agent_inferred`
-- **场景隔离**：事实记 `scope`（group / private / local），群聊默认拿不到私聊来源
-- **群聊分人**：按发言人取事实，渲染带昵称，不同人的同名键不合并
-- **删除可回退**：软删 + `tombstone` 记原因
-- **注入只陈述**：事实、经历、规则都是数据，不夹带指令
+记忆按人分开：群里谁说的记在谁名下，不会混成一个人的事。私聊里说的默认不会出现在群里。
 
 ## 安装
 
-包名 `dsh-chat-tide`，插件行 id 是 `tide`。
-
-1. 用插件管理器安装本包（或在 profile 里 `link:` 本目录）。
-2. **把 `dsh-chat-tide` 加进 profile 的 `package.json` → `dsh.profile.bundles`**。漏了会「装了但不加载」。
-3. 改 `cordis.patch.yml`：把 `scope.peers`、`extract.provider`、`extract.model` 换成自己的。
-4. 首次只开入站镜像与注入，确认没问题再开路由。
-
-数据默认在 `~/.dsh/tide/memory.db`（`dbFile` 可改）。只读页面在 `http://127.0.0.1:<端口>/tide`。
+尚未正式发布。发布后将通过 DSH 插件管理器的标准方式安装，本节届时更新。
 
 ## 配置
 
-分两层：配置文件（`cordis.patch.yml`）给结构性选项，插件详情页给运行时覆盖（写库，5 秒生效，不动配置文件）。
+大部分开关和数值在插件详情页里调，改完最多 5 秒生效，不用重启。常用的几项：
 
 | 键 | 默认 | 含义 |
 |---|---|---|
-| `routing.attentionThreshold` | 0.5 | 关注点向量命中阈值 |
-| `routing.attentionMargin` | 0.04 | 关注点命中还要跟第二名拉开多少 |
-| `routing.ambientReplyProbability` | 0.1 | 不在关注点内时探索开口的概率 |
-| `routing.l2Threshold` | 0.45 | 事实层单独判相关的门槛 |
-| `routing.maxWakesPerDay` | 20 | 每会话每日上限 |
-| `routing.minWakeIntervalMinutes` | 10 | 两次开口的最小间隔 |
-| `context.unifySessions` | false | 私聊与群聊是否共享同一份事实池 |
-| `context.groupExcludePrivate` | true | 群里是否屏蔽私聊来源 |
-
-群聊要看到私聊来源，需要 `unifySessions=true` **且** `groupExcludePrivate=false`；只开一个不生效。
-
-## 自检
-
-```bash
-node --version   # 需要 Node 22.5+（用 node:sqlite）
-npm test         # 全部探针与一致性检查（与 CI 同款）
-node scripts/doctor.mjs   # 只读体检：完整性、索引对齐、孤儿向量、审计
-```
-
-共 39 个探针，每个自带临时数据库，不碰真实数据。01–03 是能力探针（打印结论），其余断言通过/失败。
-
-## 预置
-
-规则、关注点、推荐配置在 [presets/](./presets/README.md)。通用规则可公开，私人规则留在 `presets/private.json`（已 gitignore，打包时剔除）。
+| `routing.attentionThreshold` | 0.5 | 关注点命中阈值，越高越挑 |
+| `routing.attentionMargin` | 0.04 | 命中还要跟第二名拉开多少 |
+| `routing.ambientReplyProbability` | 0.1 | 不在关注点内时，试探接话的概率 |
+| `routing.l2Threshold` | 0.45 | 单看事实够不够近就能判相关 |
+| `routing.maxWakesPerDay` | 20 | 每个会话每天最多主动开口几次 |
+| `routing.minWakeIntervalMinutes` | 10 | 两次开口至少隔多久 |
+| `context.unifySessions` | false | 私聊和群聊是否共用一份记忆 |
+| `context.groupExcludePrivate` | true | 群里是否屏蔽私聊里说过的事 |
 
 ## 已知边界
 
-- 探索概率的默认值来自经验，需要按自己的群调
-- 关注点需要真实对话积累，空库时不会主动开口
-- 图片语义缓存只有模型看过图之后才会写入；纯图片消息不会唤醒，带文字或被 @ 时是否看图由模型判断
-- 向量模型首次运行需要下载，冷启动慢
+- 试探概率的默认值只是起点，得按自己的群调
+- 关注点靠真实对话长出来，空库时它不会主动说话
+- 纯图片消息不会唤醒它；图片里带文字时，看不看由模型自己判断
+- 第一次用要下载向量模型，会慢一点
 
 ## 许可
 
