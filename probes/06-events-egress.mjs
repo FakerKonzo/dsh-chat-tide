@@ -17,7 +17,9 @@ const ok = (cond, label, extra = '') => {
 };
 
 // 1) 入站判重：同内容同窗口只进一条
-const t0 = Date.now();
+// 固定到窗口内的安全位置：跨桶会让“同窗口判重”随机失败（CI 上就这么翻过车）
+const WINDOW = 10_000;
+const t0 = Math.floor(Date.now() / WINDOW) * WINDOW + 1_000;
 const a = appendRawLog(db, { recordId: 'r1', recordType: 'message', adapter: 'qq', peerId: 'g1', conversationKey: 'qq:g1', payload: '在吗', observedAt: t0 });
 const b = appendRawLog(db, { recordId: 'r2', recordType: 'message', adapter: 'qq', peerId: 'g1', conversationKey: 'qq:g1', payload: '在吗', observedAt: t0 + 1000 });
 ok(a.inserted === true && b.inserted === false, '同窗口重复投递被判重', JSON.stringify([a.inserted, b.inserted]));
