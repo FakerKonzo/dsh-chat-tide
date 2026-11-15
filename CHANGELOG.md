@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.2.7
+
+### Fixed
+
+- **Rules were ranked by edit time, which buried the most important ones.**
+  `selectRuleFacts` ordered rules by `updated_at DESC`, so rules written once
+  and never edited — every redline and every authority rule — sorted last and
+  were cut by the character budget. In a 44-rule database the block fit 16
+  lines and not one redline survived. Ordering is now by importance
+  (`redline` → `auth` → everything else, stable by key), and `limit` no longer
+  truncates before the budget does.
+- The default rule budget was 1800 characters, too small for a mature rule set.
+  It is now 5000. Rules are injected as a delta, so a larger block only costs
+  when it actually changes.
+- Truncation used to be silent. It now logs `rule-truncated` with the number of
+  rules dropped.
+
+### Added
+
+- **Per-conversation rule scope** (schema 14, `fact.applies_to`):
+  `any` / `group` / `private` / `local`, default `any`. Rules are filtered by the
+  conversation type they belong to, so a browsing routine or a scheduled push
+  stops costing every turn in an unrelated chat. The split is deliberately
+  coarse — scheduled work cannot be told apart from an ordinary local session,
+  so it shares the `local` bucket rather than being guessed at.
+- Rule presets accept an optional `appliesTo`; `scripts/seed.mjs` writes it.
+- Probe 46 covers scope filtering, the priority ordering and truncation reporting.
+
 ## 0.2.6
 
 ### Added

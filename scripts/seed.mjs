@@ -52,6 +52,8 @@ function seedRules(file, label) {
       value: r.value,
       provenanceTier: 'source_verifiable',
       scope: 'unknown',
+      // 预置里带场景就跟着写；不写就是 any（哪都注入）
+      ...(r.appliesTo ? { appliesTo: r.appliesTo } : {}),
     });
     added++;
   }
