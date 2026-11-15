@@ -31,7 +31,14 @@ Memory is kept per person: in a group, what each member said stays under their n
 
 ## Install
 
-Not published yet. Once released it will install through the standard DSH plugin manager flow, and this section will be updated.
+Package `dsh-chat-tide`, Loader row id `tide`.
+
+1. Install `dsh-chat-tide` with the DSH plugin manager (or `link:` a local checkout while developing).
+2. Add `dsh-chat-tide` to `dsh.profile.bundles` in the profile's `package.json`. Skipping this installs the package without loading it.
+3. Open the plugin page and confirm which conversations it should manage under "Scope".
+4. On first run keep the waking route off, confirm ingestion and injection work, then enable routing.
+
+Data lives in `~/.dsh/tide/memory.db`.
 
 ## Configuration
 

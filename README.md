@@ -31,7 +31,14 @@ Tide 让机器人记住你们聊过的事，并且只在真正该说话的时候
 
 ## 安装
 
-尚未正式发布。发布后将通过 DSH 插件管理器的标准方式安装，本节届时更新。
+包名 `dsh-chat-tide`，插件行 id 是 `tide`。
+
+1. 在 DSH 插件管理器里安装 `dsh-chat-tide`（开发时也可以 `link:` 本地目录）。
+2. 把 `dsh-chat-tide` 加进 profile 的 `package.json` → `dsh.profile.bundles`。漏了会「装了但不加载」。
+3. 打开插件详情页，在「作用域」里确认它该管哪些会话。
+4. 首次只开入站镜像与注入，确认没问题再开路由。
+
+数据默认存在 `~/.dsh/tide/memory.db`。
 
 ## 配置
 
