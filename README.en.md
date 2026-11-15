@@ -39,12 +39,13 @@ Most switches and numbers live on the plugin page; changes apply within five sec
 
 | Key | Default | Meaning |
 |---|---|---|
-| `routing.attentionThreshold` | 0.5 | Attention hit threshold; higher is pickier |
-| `routing.attentionMargin` | 0.04 | How far ahead of the runner-up a hit must be |
+| `routing.attentionThreshold` | 0.48 | Attention hit threshold; higher is pickier |
+| `routing.attentionMargin` | 0.03 | How far ahead of the runner-up a hit must be |
 | `routing.ambientReplyProbability` | 0.1 | Chance of a tentative reply outside attention |
 | `routing.l2Threshold` | 0.45 | How close a single fact must be to count as relevant |
 | `routing.maxWakesPerDay` | 20 | Daily cap on spontaneous replies per conversation |
 | `routing.minWakeIntervalMinutes` | 10 | Minimum gap between two wake-ups |
+| `scope.mode` | follow | Which conversations it manages: follow dsh-qqbot / a workspace / specific sessions / off |
 | `context.unifySessions` | false | Whether private and group chats share one memory |
 | `context.groupExcludePrivate` | true | Whether groups are shielded from private sources |
 

@@ -39,12 +39,13 @@ Tide 让机器人记住你们聊过的事，并且只在真正该说话的时候
 
 | 键 | 默认 | 含义 |
 |---|---|---|
-| `routing.attentionThreshold` | 0.5 | 关注点命中阈值，越高越挑 |
-| `routing.attentionMargin` | 0.04 | 命中还要跟第二名拉开多少 |
+| `routing.attentionThreshold` | 0.48 | 关注点命中阈值，越高越挑 |
+| `routing.attentionMargin` | 0.03 | 命中还要跟第二名拉开多少 |
 | `routing.ambientReplyProbability` | 0.1 | 不在关注点内时，试探接话的概率 |
 | `routing.l2Threshold` | 0.45 | 单看事实够不够近就能判相关 |
 | `routing.maxWakesPerDay` | 20 | 每个会话每天最多主动开口几次 |
 | `routing.minWakeIntervalMinutes` | 10 | 两次开口至少隔多久 |
+| `scope.mode` | follow | 哪些会话归它管：跟随 dsh-qqbot / 指定工作区 / 指定会话 / 关闭 |
 | `context.unifySessions` | false | 私聊和群聊是否共用一份记忆 |
 | `context.groupExcludePrivate` | true | 群里是否屏蔽私聊里说过的事 |
 
