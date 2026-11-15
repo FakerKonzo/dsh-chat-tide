@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.2
+
+### Fixed
+
+- The session picker rendered once per settings group instead of once, because
+  its condition was global. It now renders only in the scope group.
+
+### Changed
+
+- Scope is the first section on the settings page, before the switches.
+
 ## 0.2.1
 
 ### Fixed
