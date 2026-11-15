@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.2.4
+
+### Fixed
+
+- Quoted replies were dropped entirely. The qqbot adapter wraps them as
+  `[Quoted message begins]…[Current message]\n[nickname (openid)] text`, and the
+  ingest path tested the prefix for meta text *before* stripping the envelope,
+  so the whole message — including what the person actually said — was
+  discarded. Inbound text now goes through one `inboundBody()` check that
+  strips the envelope first, in all three entry points (session event, pre-step
+  routing and the pre-step mirror).
+- The same ordering also dropped any message wrapped in
+  `[Chat history begins]…[Current message]`, because the envelope was tested
+  for system noise before being parsed.
+
 ## 0.2.3
 
 ### Fixed
