@@ -6,7 +6,13 @@ import { ROUTE, API_BASE, DATA_DIRNAME, DB_FILENAME, LOG_CLIENT_LOAD, LOG_PAGE_E
 import { DEFAULTS } from '../lib/schema.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const read = (p) => readFileSync(join(root, p), 'utf8');
+const read = (p) => {
+  try {
+    return readFileSync(join(root, p), 'utf8');
+  } catch {
+    return '';
+  }
+};
 
 const md = read('README.md');
 const docsAll = [md, read('CONTRIBUTING.md'), read('RELEASE.md')].join('\n');

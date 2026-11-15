@@ -66,7 +66,8 @@ const binding = { adapter: 'qq', scope: 'group', peerId: 'g1', conversationKey: 
 const base = { db, cfg, binding, text: '测试一句话', embedder, vecReady: vecOk, random: () => 0 };
 
 const r0 = await decideRoute({ ...base, cfg: { ...cfg, routing: { ...cfg.routing, quietEnabled: false } }, now: at(12) });
-ok(r0.action === 'wake', '无闸门时应唤醒（前置校验）', r0.reason);
+if (vecOk) ok(r0.action === 'wake', '无闸门时应唤醒（前置校验）', r0.reason);
+else console.log('SKIP  无闸门时应唤醒（本机没有 sqlite-vec 平台包）');
 if (r0.action !== 'wake') {
   console.log('  跳过后续闸门断言（前置校验失败）');
 } else {

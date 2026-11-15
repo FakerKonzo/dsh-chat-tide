@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.2.1
+
+### Fixed
+
+- The published package now includes CONTRIBUTING.md and RELEASE.md, so the
+  advertised `npm test` runs after install instead of failing on missing docs.
+- Probe 28 skips its wake assertion when sqlite-vec's platform package is
+  absent, instead of reporting a failure for an environment it cannot control.
+
+### Changed
+
+- README states the installation weight honestly: about 300MB of dependencies
+  (onnxruntime and friends) before the model itself is downloaded.
+
 ## 0.2.0
 
 ### Added
