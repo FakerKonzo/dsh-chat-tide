@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.2.3
+
+### Fixed
+
+- If the embedding child process died after starting successfully, the cached
+  instance kept being handed out, so every later vector write failed until the
+  host was restarted. The exit handler now marks the instance dead, rejects
+  in-flight calls and clears the singleton, so the next call rebuilds it.
+- `/tide/api/client-loaded` accumulated an unbounded request body. It is now
+  capped at 16 KB.
+
+### Added
+
+- `doctor` reports `向量维度一致`, catching a database whose `vec0` tables were
+  created with different widths.
+- Probe 42 kills the embedding child and checks that the next call rebuilds it.
+- CONTRIBUTING documents the DLL contention during upgrade and the steps for
+  switching to a model with a different dimension.
+
 ## 0.2.2
 
 ### Fixed

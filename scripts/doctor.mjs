@@ -32,6 +32,19 @@ report.schema = one('PRAGMA user_version').user_version;
 
 const integrity = one('PRAGMA integrity_check').integrity_check;
 check('数据库完整性', integrity === 'ok' ? 'ok' : 'fail', integrity);
+
+// 换向量模型会换维度，vec0 表是按维度建的，混用只会静默写坏数据
+if (vecReady) {
+  const dims = all("SELECT name, sql FROM sqlite_master WHERE type='table' AND name IN ('vec_fact','vec_event','vec_attention','vec_exemplar')")
+    .map((r) => ({ name: r.name, dim: Number(/float\[(\d+)\]/.exec(r.sql ?? '')?.[1] ?? 0) }))
+    .filter((r) => r.dim > 0);
+  const uniq = [...new Set(dims.map((d) => d.dim))];
+  check(
+    '向量维度一致',
+    uniq.length === 0 ? 'ok' : uniq.length === 1 ? 'ok' : 'fail',
+    uniq.length === 0 ? '无向量表' : `${uniq.join('/')} (${dims.map((d) => d.name.replace('vec_', '')).join(',')})`,
+  );
+}
 const fk = all('PRAGMA foreign_key_check').filter((r) => !r.error);
 check('外键一致性', fk.length === 0 ? 'ok' : 'fail', fk.length);
 

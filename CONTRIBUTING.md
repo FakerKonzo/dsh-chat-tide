@@ -46,6 +46,20 @@ Data lives in `~/.dsh/tide/memory.db`; the read-only page is `/tide` on the host
 
 When linking this repository into a profile for development, add `dsh-chat-tide` to the profile's `dsh.profile.bundles`. Without that entry the package is installed but never loaded, and the plugin page shows nothing.
 
+### Upgrading next to a running host
+
+The embedding child process keeps `node_modules/onnxruntime-node`'s native DLLs open. A package manager that has to replace that directory fails with `EPERM` (pnpm reports `ERR_PNPM_EPERM ... importPackage`) and can leave a half-imported tree behind. Before upgrading, quit the host — or move the directory aside and rerun the install:
+
+```bash
+mv node_modules/onnxruntime-node node_modules/onnxruntime-node.old   # then reinstall
+```
+
+Rolling the DLL out from under the host is also the reason the embedder lives in its own process instead of a worker thread.
+
+### Changing the embedding model
+
+`vec0` tables are created with a fixed width (`float[512]`). A model with a different dimension cannot be mixed into an existing database: drop `vec_fact`, `vec_event`, `vec_attention` and `vec_exemplar`, let the schema recreate them, then let the backfill run. `node scripts/doctor.mjs` reports a `向量维度一致` failure when widths disagree.
+
 ## Tooling
 
 | Command | Purpose |
