@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.2.5
+
+### Changed
+
+- **Breaking:** the model cache no longer lives inside the package. It defaults to
+  `~/.dsh/tide/models` (`MODEL_CACHE_DIR` still overrides), so reinstalling or
+  upgrading no longer throws the model away. Anyone who already downloaded the
+  model into the old `node_modules/dsh-chat-tide/.cache/models` path moves or
+  re-downloads it once.
+- The in-process ONNX fallback is now opt-in (`embedding.allowInline`, default
+  `false`). Loading ONNX in the host pins `onnxruntime-node`'s native DLLs, and
+  the next uninstall cannot delete them: updating from the plugin page hangs on
+  "stopping and removing the old plugin" until the host is restarted. When the
+  model cannot be loaded, the embedder now reports a single actionable line
+  instead of silently switching implementations.
+- New `embedding.allowRemote` (default `true`). Set it to `false` to use only the
+  local cache, which fails immediately instead of retrying a download.
+
+### Fixed
+
+- Embedder fatal messages were forwarded with a full stack, which then leaked
+  into the user-facing error. Only the first line is used now.
+
 ## 0.2.4
 
 ### Fixed
