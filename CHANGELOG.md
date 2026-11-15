@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.6
+
+### Added
+
+- Group chats can hide raw tool errors from the model (`egress.hideToolErrors`,
+  default on, also a switch on the plugin page). A failed tool result is replaced
+  with one neutral line naming the tool and, when it is a short identifier, the
+  error code; the call still fails. Only group-scoped conversations are touched:
+  private chats, local sessions and subagents keep the original error text.
+- Probe 45 covers the decision table (group vs private, toggle, successful call,
+  blocked decision, context preservation).
+
 ## 0.2.5
 
 ### Changed
