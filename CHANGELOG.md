@@ -4,6 +4,19 @@
 
 _Work in progress. Published as part of the next release; see RELEASE.md for what triggers one._
 
+### Changed
+
+- **The plugin no longer chooses a model.** Extraction used to require
+  `extract.provider` / `extract.model`, and the shipped patch handed out
+  placeholders, so every turn quietly extracted nothing. Extraction now follows
+  the model the session is already using (taken from `agent/pre-step`), passes
+  the same reasoning effort, and skips the call when no selection is known.
+  Two configuration keys and two placeholder lines are gone.
+- The rule block is re-sent every `context.ruleRefreshTurns` turns (default 20,
+  `0` disables). Sending rules only when they change meant that a long session
+  eventually carried them far enough back to be compacted away, which is how
+  "don't answer with a placeholder" got forgotten within the same evening.
+
 ### Added
 
 - A group-scoped rule (`rule.group_silence_tool`) that tells the model to end the

@@ -26,8 +26,7 @@
           tools: true
           writeTools: false
         extract:
-          provider: '<your-llm-provider>'
-          model: '<your-llm-model>'
+          # 抽取用哪个模型不在这里配：跟随当前会话正在用的模型
           minChars: 6
         context:
           enabled: true

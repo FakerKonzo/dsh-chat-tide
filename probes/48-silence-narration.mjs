@@ -26,5 +26,19 @@ ok(isNarrationOnly('（）') === true, '空括号也算旁白');
 // 3) 声明式旁白不在机械拦截范围，得靠规矩
 ok(isNarrationOnly('这条不是问我的，我就不接话了') === false, '声明式旁白不由过滤器处理');
 
+// 4) 闸门关着也照样拦（线上 egressGate 就是关的）
+const { createEgress } = await import('../lib/egress.js');
+const gateOff = createEgress({ isBindable: () => true, cfg: {} });
+const collect = async (it) => { const out = []; for await (const c of it) out.push(c); return out; };
+const chunks = [
+  { type: 'text-delta', text: '（图跳过）' },
+  { type: 'block-end', block: { type: 'text', text: '（图跳过）' } },
+];
+const off = await collect(gateOff.wrapStream('s1', (async function* () { for (const c of chunks) yield c; })(), { gate: false }));
+ok(off.filter((c) => c.type === 'text-delta').length === 0, '闸门关着时括号旁白也拦');
+const norm = [{ type: 'text-delta', text: '正常一句' }, { type: 'block-end', block: { type: 'text', text: '正常一句' } }];
+const keep = await collect(gateOff.wrapStream('s1', (async function* () { for (const c of norm) yield c; })(), { gate: false }));
+ok(keep.filter((c) => c.type === 'text-delta').map((c) => c.text).join('') === '正常一句', '闸门关着时正文不受影响');
+
 console.log(fail === 0 ? '\n全部通过' : `\n${fail} 项失败`);
 process.exit(fail === 0 ? 0 : 1);
