@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+_Work in progress. Published as part of the next release; see RELEASE.md for what triggers one._
+
 ## 0.2.8
 
 ### Fixed
