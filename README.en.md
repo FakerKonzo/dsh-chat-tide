@@ -29,6 +29,17 @@ Everything else is installed with the package. The first run downloads a local e
 
 Memory is kept per person: in a group, what each member said stays under their name. What was said in a private chat does not appear in groups by default.
 
+### The four things that must not be lost
+
+Details change; these do not.
+
+1. **Answer on demand** — a group message hits a gate first; anything that should not be answered is dropped before a model call costs anything.
+2. **Decline explicitly** — the model has `stay_silent`; calling it produces zero output for the turn. Real silence is not the string "（not replying）".
+3. **Gate what gets remembered** — incoming chat is recorded first, then a prefilter and a budget decide what is worth extracting. Extraction follows the session's own model; the plugin never picks one.
+4. **Inject rules and facts properly** — rules, facts and episodes each have their own budget, are selected per conversation type, rules are re-sent periodically, and every fact carries whose it is.
+
+`probes/52-core-capabilities.mjs` is the guard for these four.
+
 ## Install
 
 Package `dsh-chat-tide`, Loader row id `tide`.
