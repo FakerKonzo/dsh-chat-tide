@@ -1,6 +1,6 @@
 {
   "name": "dsh-chat-tide",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "description": "Tide — chat memory and selective waking for DSH",
   "type": "module",
   "main": "lib/index.js",

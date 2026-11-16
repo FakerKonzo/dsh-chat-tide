@@ -40,7 +40,8 @@ const c2cBinding = { scope: 'c2c', peerId: USER, conversationKey: `qq:${USER}` }
 const g1 = buildInjection({ db, binding: groupBinding, payload, cfg: {} });
 ok(g1.factBlock.includes('owner.group_project'), '群聊注入含群聊事实');
 ok(!g1.factBlock.includes('owner.private_addr'), '群聊默认不含私聊事实');
-ok(g1.factBlock.includes('[小明]'), '群聊事实带发言人', g1.factBlock.split('\n')[2] ?? '');
+// 一位发言人时表头点名，多位发言人时逐行标——两种都算"带发言人"
+ok(g1.factBlock.includes('[小明]') || g1.factBlock.includes('都关于 小明'), '群聊事实带发言人', g1.factBlock.split('\n')[2] ?? '');
 
 // 2) 只开统一会话，不开屏蔽：仍不含私聊
 const g2 = buildInjection({ db, binding: groupBinding, payload, cfg: { unifySessions: true } });

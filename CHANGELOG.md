@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.2.8
+
+### Fixed
+
+- **Injected facts did not say whose they were.** The speaker label was only
+  rendered for group chats; a private conversation got a bare statement
+  (`pref.other.local_resources: ...`) with no subject, so the model had to infer
+  ownership from the key prefix — and `other.*` means "not the owner", not "the
+  person you are talking to".
+- Worse, de-duplication outside groups keyed on the canonical key alone, so two
+  people with the same key collapsed into one line and one person's fact was
+  silently dropped. De-duplication now always includes the user id, and a block
+  containing more than one person labels every line.
+- When every fact in the block belongs to one person, the header names them once
+  instead of repeating a prefix on each line.
+- The nickname of a fact's owner is now looked up for every conversation type,
+  not just groups. A missing nickname renders as a short `id:` prefix rather than
+  a bare 6-character fragment.
+
+### Added
+
+- Probe 47 covers the owner labelling, the collapsed-duplicate regression and the
+  no-nickname fallback.
+
 ## 0.2.7
 
 ### Fixed

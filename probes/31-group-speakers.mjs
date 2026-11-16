@@ -39,10 +39,10 @@ ok(block.includes('[阿甲]') && block.includes('[阿乙]'), '渲染带发言人
 ok(block.includes('只喝美式') && block.includes('只喝拿铁'), '同键两人都保留（不合并）');
 console.log(block.split('\n').slice(2, 5).join('\n'));
 
-// 私聊渲染：不带名字、同键只留一条
-const flat = renderFactBlock(rows, { withSpeaker: false, maxChars: 800 });
-ok(!flat.includes('[阿甲]'), '私聊不带发言人前缀');
-ok((flat.match(/pref\.other\.coffee/g) ?? []).length === 1, '私聊同键只留一条');
+// 非群聊渲染：两个人同键时各留一条，而且必须标出是谁的
+const flat = renderFactBlock(rows, { withSpeaker: false, names, maxChars: 800 });
+ok((flat.match(/pref\.other\.coffee/g) ?? []).length === 2, '同键两人各留一条（旧版会吃掉一条）');
+ok(flat.includes('[阿甲]') && flat.includes('[阿乙]'), '多人同块时逐行标出是谁的');
 
 // 私聊：默认只看私聊来源，统一会话开启后才看群聊来源
 const { writeFact: wf2 } = await import('../lib/facts.js');
