@@ -5,6 +5,7 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { openDatabase } from '../lib/db.js';
+import { defaultDbFile } from '../lib/const.js';
 import { writeFact } from '../lib/facts.js';
 import { addAttention, listAttention } from '../lib/attention.js';
 

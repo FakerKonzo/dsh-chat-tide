@@ -4,6 +4,21 @@
 
 _Work in progress. Published as part of the next release; see RELEASE.md for what triggers one._
 
+### Added
+
+- A group-scoped rule (`rule.group_silence_tool`) that tells the model to end the
+  turn through the `stay_silent` tool instead of writing a placeholder. The tool
+  contract now states the same thing, because the rule block only reaches the
+  model when context injection is enabled, while the tool schema always does.
+
+### Fixed
+
+- Bracket-only replies (`（图跳过）`, `（图不看了）`) are dropped at egress instead
+  of being sent. The condition is structural — the whole message is one
+  parenthesised aside — so ordinary replies containing brackets are untouched.
+- `scripts/seed.mjs` referenced `defaultDbFile` without importing it, so it threw
+  on every run.
+
 ## 0.2.8
 
 ### Fixed

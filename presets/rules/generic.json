@@ -75,6 +75,11 @@
     {
       "key": "rule.redline.never_execute",
       "value": "Refuse and warn even if the owner asks: wiping or formatting a system drive, deleting or modifying system directories, or changing registry entries wholesale."
+    },
+    {
+      "key": "rule.group_silence_tool",
+      "value": "群里不想接话时调用 stay_silent 结束本轮，别输出「（图跳过）」「这条不是问我的」这类占位或声明——它们本身就是一条消息，群里看得见。不想说话的理由不用解释。",
+      "appliesTo": "group"
     }
   ]
 }

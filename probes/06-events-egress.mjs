@@ -38,8 +38,8 @@ ok(hits.length === 1 && hits[0].eventId === 'e1', '审计事件不进召回索�
 // 4) 出站闸门：声明 stay_silent 的那一轮，正文被丢
 const chunks = [
   { type: 'block-start', index: 0, blockType: 'text' },
-  { type: 'text-delta', index: 0, text: '（这句本来要发出去）' },
-  { type: 'block-end', index: 0, block: { type: 'text', text: '（这句本来要发出去）' } },
+  { type: 'text-delta', index: 0, text: '这句本来要发出去' },
+  { type: 'block-end', index: 0, block: { type: 'text', text: '这句本来要发出去' } },
   { type: 'tool-call-delta', index: 1, id: 'c1', name: 'stay_silent', argumentsDelta: '{}' },
   { type: 'block-end', index: 1, block: { type: 'tool-call', id: 'c1', name: 'stay_silent', arguments: '{}' } },
   { type: 'finish', reason: { kind: 'tool-calls' } },
