@@ -27,7 +27,7 @@ Everything else is installed with the package. The first run downloads a local e
 4. **Settle afterwards**: at the end of a turn, facts, episodes and interests worth keeping are extracted.
 5. **Clean up over time**: duplicates merge, stale entries retire, one-off claims get corrected.
 
-Memory is kept per person: in a group, what each member said stays under their name. What was said in a private chat does not appear in groups by default.
+Memory is kept per person: in a group, what each member said stays under their name. A group's automatic injection filters out private-chat sources by default (the switch can be turned off); the memory lookup tools apply no such filter and read the whole database.
 
 ### The four things that must not be lost
 

@@ -38,6 +38,19 @@ _Work in progress. Published as part of the next release; see RELEASE.md for wha
 
 ### Fixed
 
+- Relevant episodes never reached the context when the current conversation already
+  had its fill of recent ones: the candidate list was recent-first, hits-last,
+  then truncated, so a cross-session hit was dropped every time. Two slots are now
+  reserved for search hits (`context.eventRelatedReserve`, 0 restores the old
+  behaviour) and spare slots still fall back to recent episodes.
+- A turn carrying several speakers attributed every extracted candidate to the last
+  one, and graded all of them with one provenance tier. Extraction now labels each
+  source line with its speaker, keeps `speaker` on every candidate, and resolves
+  user, evidence record and tier per item. Unknown or missing speakers fall back to
+  the previous single-speaker behaviour.
+- `fact_get` described itself as returning historical versions while the query only
+  returns each candidate's current value and status. The description now matches.
+
 - `scripts/seed.mjs` referenced `defaultDbFile` without importing it, so it threw
   on every run.
 
