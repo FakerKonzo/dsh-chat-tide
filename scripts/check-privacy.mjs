@@ -10,7 +10,11 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 function trackedFiles() {
   try {
-    const out = execFileSync('git', ['ls-files', '-z'], { cwd: root, encoding: 'buffer' });
+    const out = execFileSync('git', ['ls-files', '-z'], {
+      cwd: root,
+      encoding: 'buffer',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
     return out
       .toString('utf8')
       .split('\0')
