@@ -36,14 +36,14 @@ releases: users pay for every update with a re-download and an upgrade risk.
 - [ ] `node scripts/check-docs.mjs` — the README matches the code
 - [ ] `node scripts/doctor.mjs` against a copy of a real database — no `fail`
 - [ ] CI is green on both Node majors for the release commit
-- [ ] `node --check` every file under `lib/` (the exporter does this too)
+- [ ] `node --check` every file under `lib/`
 
 ## 2. Sanitisation
 
-- [ ] No real openids, account ids, host paths, or `appSecret` anywhere in the publishable tree
-- [ ] `presets/private.json` is absent from the export (gitignored, removed by the exporter)
+- [ ] `node scripts/check-privacy.mjs` prints `隐私闸门：通过` — it scans every tracked file
+      for real openids, key-shaped strings, host paths and long numeric ids
+- [ ] `presets/private.json` is untracked (it is gitignored; never commit it)
 - [ ] `cordis.patch.yml` uses placeholders only
-- [ ] `node scripts/export-repo.mjs` prints `敏感标识检查： 通过`
 
 ## 3. Package metadata
 
@@ -61,9 +61,8 @@ releases: users pay for every update with a re-download and an upgrade risk.
 
 ## 5. Repository
 
-- [ ] `node scripts/export-repo.mjs <target>` produces the tree
-- [ ] `git init`, first commit, remote added, pushed
-- [ ] Tag the release (`vX.Y.Z`)
+- [ ] This directory is the source of truth; commit the release change on `main`
+- [ ] Tag the release (`vX.Y.Z`) and push both `main` and the tag
 - [ ] `CONTRIBUTING.md` present; issue templates optional
 
 ## 6. Optional npm publish

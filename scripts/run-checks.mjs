@@ -32,7 +32,7 @@ for (const name of probes) {
   if (!ok && !printable) console.log(out);
 }
 
-const checks = ['check-naming.mjs', 'check-dead-config.mjs', 'check-docs.mjs'];
+const checks = ['check-naming.mjs', 'check-dead-config.mjs', 'check-docs.mjs', 'check-privacy.mjs'];
 for (const name of checks) {
   const { ok, tail, out } = run(join('scripts', name));
   results.push({ name: `scripts/${name}`, ok, tail });

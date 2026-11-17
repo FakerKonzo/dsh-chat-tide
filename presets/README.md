@@ -31,7 +31,7 @@ node scripts/seed.mjs --force         # 覆盖已存在的同名键（默认跳�
 
 - `rules/generic.json` 进仓库，任何人都能用；
 - `private.json` 只在本地，用来重建你自己的部署；
-- 想把现有部署导出成私人预置：`node scripts/export-private-rules.mjs`。
+- 想把现有部署导出成私人预置：这份导出工具留在你自己的私有工作区里，不进本仓库（它会读到真实数据）。
 
 ## 写规矩的几条经验
 

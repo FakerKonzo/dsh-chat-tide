@@ -7,7 +7,7 @@ const ok = (cond, label, extra = '') => {
   if (!cond) fail++;
 };
 
-const group = '[Chat history begins]\n[A (111)] 牛哇\n[B (222)] 周末去爬山\n[Chat history ends]\n[Current message]\n[小明 (AAAA0000BBBB1111CCCC2222DDDD3333)] <@E5522D401FA491B4AC4BEBF1CFD822BE> 今天吃了 6 个包子 (@you)';
+const group = '[Chat history begins]\n[A (111)] 牛哇\n[B (222)] 周末去爬山\n[Chat history ends]\n[Current message]\n[小明 (AAAA0000BBBB1111CCCC2222DDDD3333)] <@1111AAAA2222BBBB3333CCCC4444DDDD> 今天吃了 6 个包子 (@you)';
 const g = normalizeInbound(group);
 ok(g.hadEnvelope === true, '识别信封');
 ok(g.sender?.id === 'AAAA0000BBBB1111CCCC2222DDDD3333', '取出信封里的发送者', g.sender?.name);
@@ -26,7 +26,7 @@ ok(isSystemNoise('The working directory changed from "D:/" to "D:/x".'), '工作
 ok(isSystemNoise('[Chat history begins]\n...'), '历史缓冲算系统噪音');
 ok(!isSystemNoise('今天我吃了三个饼'), '正常消息不是噪音');
 
-const g2 = normalizeInbound('[Chat history begins]\n[X (1)] 无关\n[Current message]\n[如烟 (65302BD6DDC8AAAF8DF0B4652352AC37)] \n');
+const g2 = normalizeInbound('[Chat history begins]\n[X (1)] 无关\n[Current message]\n[如烟 (5555AAAA6666BBBB7777CCCC8888DDDD)] \n');
 ok(g2.current === '' && g2.sender?.name === '如烟', '空消息只剩发送者时正文为空', JSON.stringify(g2.current));
 
 console.log(fail === 0 ? '\n全部通过' : `\n${fail} 项失败`);
