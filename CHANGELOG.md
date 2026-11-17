@@ -1,8 +1,9 @@
 # Changelog
 
-## Unreleased
+## 0.3.1 — 2026-11-17
 
-_Work in progress. Published as part of the next release; see RELEASE.md for what triggers one._
+Fixes only. Two tuning keys are new (`extract.lookbackMinutes`, `extract.lookbackRows`)
+but they only shape the fixed behaviour, so this stays a patch.
 
 ### Fixed
 
