@@ -1,8 +1,15 @@
 # Changelog
 
-## Unreleased
+## 0.3.0 — 2026-11-17
 
-_Work in progress. Published as part of the next release; see RELEASE.md for what triggers one._
+Minor version: two configuration keys are gone and the silence path now depends on a
+tool that was previously never registered. Existing databases need no migration.
+
+### Breaking
+
+- `extract.provider` and `extract.model` are removed. If a deployment set them,
+  nothing breaks at load time — they are simply ignored, and extraction follows the
+  session model instead. Delete them from your patch to keep the config honest.
 
 ### Changed
 
