@@ -19,16 +19,25 @@ _Work in progress. Published as part of the next release; see RELEASE.md for wha
 
 ### Added
 
+- The `stay_silent` tool is registered whenever tools are enabled, not only when
+  the egress gate is on. With the gate off the tool was missing entirely, so a
+  model that wanted to decline had nothing to call and improvised a placeholder
+  line — `（图跳过）`, or a bare `。`. Declining now has a route that does not
+  depend on an unrelated switch.
 - A group-scoped rule (`rule.group_silence_tool`) that tells the model to end the
-  turn through the `stay_silent` tool instead of writing a placeholder. The tool
-  contract now states the same thing, because the rule block only reaches the
-  model when context injection is enabled, while the tool schema always does.
+  turn through that tool. The tool contract says the same thing, because the rule
+  block only reaches the model when context injection is enabled while the tool
+  schema always does.
+
+### Removed
+
+- An earlier attempt filtered punctuation-only and bracket-only replies out of the
+  stream. That was the wrong layer: once the model has produced text, guessing
+  whether the text "means anything" is unbounded and brittle. Silence belongs
+  upstream — the routing gate, or an explicit tool call.
 
 ### Fixed
 
-- Bracket-only replies (`（图跳过）`, `（图不看了）`) are dropped at egress instead
-  of being sent. The condition is structural — the whole message is one
-  parenthesised aside — so ordinary replies containing brackets are untouched.
 - `scripts/seed.mjs` referenced `defaultDbFile` without importing it, so it threw
   on every run.
 

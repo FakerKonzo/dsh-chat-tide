@@ -1,44 +1,59 @@
-// 沉默就是零输出：括号旁白不能被当成一条消息发出去
-import { isNarrationOnly } from '../lib/egress.js';
+// 沉默只走工具，不靠猜正文
+// 曾经试过用正则判定「整条只是括号/标点就丢掉」，那是在错误的层级打补丁：
+// 决定沉默要么在上游闸门，要么由模型显式调用工具；正文一旦产出就不该被字符串猜疑。
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { SILENT_TOOL, createEgress, isSilentCall } from '../lib/egress.js';
 
 let fail = 0;
 const ok = (cond, label, extra = '') => {
   console.log(`${cond ? 'PASS' : 'FAIL'}  ${label}${extra ? '  ' + extra : ''}`);
   if (!cond) fail++;
 };
+const read = (rel) => readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8');
 
-// 1) 今晚真实发出去的那两条
-ok(isNarrationOnly('（图跳过）') === true, '（图跳过）判为旁白');
-ok(isNarrationOnly('（图不看了）') === true, '（图不看了）判为旁白');
-ok(isNarrationOnly('（不回复）') === true, '（不回复）判为旁白');
-ok(isNarrationOnly('（图跳过）（真的）') === true, '多个括号连在一起也算');
-ok(isNarrationOnly('(skip image)') === true, '半角括号同样处理');
-ok(isNarrationOnly('  （图跳过）\n') === true, '前后空白不影响判定');
+// 1) 代码里不再有「猜正文」的函数
+const egressSrc = read('../lib/egress.js');
+ok(!/isNarrationOnly/.test(egressSrc), '出站不再按内容猜测旁白');
+ok(!/\\p\{L\}/.test(egressSrc), '没有针对标点的正则判定');
+ok(!/图跳过|图不看了/.test(egressSrc), '没有针对具体措辞的黑名单');
+// 规则文件里保留「别用占位话」是行为要求，不是代码过滤
 
-// 2) 有正文的绝不能误伤
-ok(isNarrationOnly('（图跳过）但这事我得说一句') === false, '括号后有正文不拦');
-ok(isNarrationOnly('这个我看了，是张小笼包的照片') === false, '正常回复不拦');
-ok(isNarrationOnly('行（明天再说）') === false, '句中括号不拦');
-ok(isNarrationOnly('这是我的（唯一）办法') === false, '括号在句中不拦');
-ok(isNarrationOnly('') === false, '空文本不判为旁白（交给下游判空）');
-ok(isNarrationOnly('（）') === true, '空括号也算旁白');
+// 2) 沉默只认工具调用
+ok(isSilentCall([SILENT_TOOL]) === true, '调用拒答工具即判静默');
+ok(isSilentCall(['reply']) === false, '别的工具不算');
+ok(isSilentCall([]) === false, '没调工具不算');
 
-// 3) 声明式旁白不在机械拦截范围，得靠规矩
-ok(isNarrationOnly('这条不是问我的，我就不接话了') === false, '声明式旁白不由过滤器处理');
+// 3) 行为：调了工具 → 正文丢弃；没调 → 原样放行（哪怕只有一个句号）
+const collect = async (it) => {
+  const out = [];
+  for await (const c of it) out.push(c);
+  return out;
+};
+const egress = createEgress({ isBindable: () => true, cfg: {} });
+const stream = (chunks) => (async function* () {
+  for (const c of chunks) yield c;
+})();
 
-// 4) 闸门关着也照样拦（线上 egressGate 就是关的）
-const { createEgress } = await import('../lib/egress.js');
-const gateOff = createEgress({ isBindable: () => true, cfg: {} });
-const collect = async (it) => { const out = []; for await (const c of it) out.push(c); return out; };
-const chunks = [
-  { type: 'text-delta', text: '（图跳过）' },
-  { type: 'block-end', block: { type: 'text', text: '（图跳过）' } },
+const silentChunks = [
+  { type: 'text-delta', text: '这句不该出去' },
+  { type: 'block-end', block: { type: 'text', text: '这句不该出去' } },
+  { type: 'tool-call-delta', name: SILENT_TOOL },
 ];
-const off = await collect(gateOff.wrapStream('s1', (async function* () { for (const c of chunks) yield c; })(), { gate: false }));
-ok(off.filter((c) => c.type === 'text-delta').length === 0, '闸门关着时括号旁白也拦');
-const norm = [{ type: 'text-delta', text: '正常一句' }, { type: 'block-end', block: { type: 'text', text: '正常一句' } }];
-const keep = await collect(gateOff.wrapStream('s1', (async function* () { for (const c of norm) yield c; })(), { gate: false }));
-ok(keep.filter((c) => c.type === 'text-delta').map((c) => c.text).join('') === '正常一句', '闸门关着时正文不受影响');
+const got = await collect(egress.wrapStream('s1', stream(silentChunks)));
+ok(got.filter((c) => c.type === 'text-delta').length === 0, '调了工具，正文一个字节都不发');
+
+const plainChunks = [
+  { type: 'text-delta', text: '。' },
+  { type: 'block-end', block: { type: 'text', text: '。' } },
+];
+const kept = await collect(egress.wrapStream('s1', stream(plainChunks)));
+ok(kept.filter((c) => c.type === 'text-delta').map((c) => c.text).join('') === '。', '没调工具就原样放行，不由框架替它猜');
+
+// 4) 工具本身必须注册（这才是真正的修复点）
+const idx = read('../lib/index.js');
+ok(/if \(cfg\.features\.tools !== false\) \{[\s\S]{0,200}?name: 'stay_silent'/.test(idx), '拒答工具不看出站开关，始终注册');
+ok(idx.includes('不想接话、不该插嘴'), '工具契约写明什么时候用它');
 
 console.log(fail === 0 ? '\n全部通过' : `\n${fail} 项失败`);
 process.exit(fail === 0 ? 0 : 1);

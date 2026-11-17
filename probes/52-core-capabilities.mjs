@@ -2,7 +2,7 @@
 // 细节会变，这四条不能丢；有人改动时这里先亮红灯
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { SILENT_TOOL, isNarrationOnly, isSilentCall } from '../lib/egress.js';
+import { SILENT_TOOL, isSilentCall } from '../lib/egress.js';
 
 let fail = 0;
 const ok = (cond, label, extra = '') => {
@@ -23,8 +23,7 @@ ok(!!SILENT_TOOL, '存在拒答工具常量');
 ok(idx.includes(`name: '${SILENT_TOOL}'`), '拒答工具已注册');
 ok(/if \(cfg\.features\.tools !== false\)/.test(idx), '拒答通道不被出站闸门开关卡住');
 ok(isSilentCall([SILENT_TOOL]) === true, '闸门认得这个工具名');
-ok(isNarrationOnly('（图跳过）') === true, '括号旁白不被当成正经回复');
-ok(/工具说明/.test(idx) || idx.includes('不要用「（图跳过）」'), '工具契约里写明用它代替占位话');
+ok(idx.includes('不要用「（图跳过）」'), '工具契约里写明用它代替占位话');
 
 // 三、记事把关：入站镜像 + 预筛 + 抽取跟随会话模型 + 分人归属
 ok(idx.includes('appendRawLog'), '入站先落原始记录');
