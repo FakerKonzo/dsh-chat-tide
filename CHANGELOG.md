@@ -6,6 +6,12 @@ _Work in progress. Published as part of the next release; see RELEASE.md for wha
 
 ### Fixed
 
+- Extraction looked at the current turn only. In a group chat that is usually one
+  message (85% of turns in a real database), so pronouns had nothing to resolve
+  against: "你不是喜欢三轮电摩吗" arrived alone and 你 became whoever the model
+  guessed. The window is now time-based (`extract.lookbackMinutes`, default 5,
+  `lookbackRows` default 12): earlier messages are supplied as 前文 for resolving
+  references only, and the prompt says to extract from the current messages alone.
 - Silence is now recognised at the dispatch layer (`tools/execute`), not only from
   the top-level tool names of one stream. Agent presets that expose a single
   `run_code` tool call Tide's tools inside the program, where the name never
