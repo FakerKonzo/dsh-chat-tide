@@ -38,6 +38,15 @@ _Work in progress. Published as part of the next release; see RELEASE.md for wha
 
 ### Fixed
 
+- Event rows now carry the evidence record of the speaker they were attributed to,
+  not always the newest message in the turn.
+- Speakers in one turn are labelled uniquely (`名字#2` on a nickname clash) so two
+  members with the same nickname no longer collapse onto one person.
+- Search now fetches several times more candidates, and reserved slots go to hits from
+  other conversations first — same-conversation hits are already covered by the recent
+  list, so reserving for them fixed nothing.
+- Episodes dropped by the character budget are no longer recorded as sent; they get
+  another chance next turn instead of disappearing.
 - Relevant episodes never reached the context when the current conversation already
   had its fill of recent ones: the candidate list was recent-first, hits-last,
   then truncated, so a cross-session hit was dropped every time. Two slots are now
