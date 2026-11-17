@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+_Work in progress. Published as part of the next release; see RELEASE.md for what triggers one._
+
+### Fixed
+
+- Silence is now recognised at the dispatch layer (`tools/execute`), not only from
+  the top-level tool names of one stream. Agent presets that expose a single
+  `run_code` tool call Tide's tools inside the program, where the name never
+  appears on the outer stream — the model could decline and nothing noticed. The
+  egress gate also consults the declared-silent flag now, so later steps in the
+  same turn stay quiet.
+
 ## 0.3.0 — 2026-11-17
 
 Minor version: two configuration keys are gone and the silence path now depends on a
