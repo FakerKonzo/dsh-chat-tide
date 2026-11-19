@@ -28,8 +28,10 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
 
+      # 探针只用 sqlite-vec 与 transformers 的纯 JS 部分；原生 postinstall
+      # （onnxruntime / sharp）在 CI 里既不需要，又最容易因为下载失败把整步拖垮。
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: npm install --no-audit --no-fund --ignore-scripts
 
       # 模型相关的两个探针会下载约 30MB 权重，CI 里跳过；
       # 其余探针自带临时数据库，不读写用户数据。
