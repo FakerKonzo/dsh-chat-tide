@@ -1,9 +1,24 @@
 # Changelog
 
+## Unreleased
+
+_Work in progress. Published as part of the next release; see RELEASE.md for what triggers one._
+
 ## 0.3.1 — 2026-11-17
 
 Fixes only. Two tuning keys are new (`extract.lookbackMinutes`, `extract.lookbackRows`)
 but they only shape the fixed behaviour, so this stays a patch.
+
+### Added
+
+- Memory can now be edited from the settings page: change a fact value (written as a new
+  version, old one kept), change its category, delete a fact or an episode with a reason.
+  Deletions and edits both leave an audit row; ownership (user/entity) is deliberately not
+  editable, because that would be forging the source.
+- The session picker has a filter (title, path or id) — with dozens of sessions the old list
+  was unusable.
+- The header shows when data last arrived and when memory was last injected. Without those
+  two timestamps there was no way to tell a working install from a silently broken one.
 
 ### Fixed
 
