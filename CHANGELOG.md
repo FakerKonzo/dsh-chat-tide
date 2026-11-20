@@ -4,11 +4,6 @@
 
 _Work in progress. Published as part of the next release; see RELEASE.md for what triggers one._
 
-## 0.3.1 — 2026-11-17
-
-Fixes only. Two tuning keys are new (`extract.lookbackMinutes`, `extract.lookbackRows`)
-but they only shape the fixed behaviour, so this stays a patch.
-
 ### Added
 
 - Memory can now be edited from the settings page: change a fact value (written as a new
@@ -19,6 +14,20 @@ but they only shape the fixed behaviour, so this stays a patch.
   was unusable.
 - The header shows when data last arrived and when memory was last injected. Without those
   two timestamps there was no way to tell a working install from a silently broken one.
+
+### Fixed
+
+- Injected memory no longer accumulates in the conversation. Each turn used to append a fresh
+  block, so a long session carried 84 rule blocks, 88 fact blocks and 51 episode blocks — the
+  same rules restated dozens of times. A change now replaces the previous block instead of
+  appending, and stale duplicates collapse to the newest one, so exactly one memory block is
+  ever in front of the model.
+
+## 0.3.1 — 2026-11-17
+
+Fixes only. Two tuning keys are new (`extract.lookbackMinutes`, `extract.lookbackRows`)
+but they only shape the fixed behaviour, so this stays a patch.
+
 
 ### Fixed
 
