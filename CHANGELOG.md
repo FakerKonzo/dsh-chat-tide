@@ -1,8 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.4.0 — 2026-11-20
 
-_Work in progress. Published as part of the next release; see RELEASE.md for what triggers one._
+Minor version: memory editing is a new capability, and two context defaults changed
+(past reasoning is stripped, injected blocks are replaced rather than appended).
+No database migration.
 
 ### Added
 
@@ -22,6 +24,17 @@ _Work in progress. Published as part of the next release; see RELEASE.md for wha
   same rules restated dozens of times. A change now replaces the previous block instead of
   appending, and stale duplicates collapse to the newest one, so exactly one memory block is
   ever in front of the model.
+- The injection diagnostic log had silently stopped writing: it referenced a variable that
+  no longer existed, and the surrounding try/catch swallowed the ReferenceError. `inject.log`
+  had been frozen since the delta refactor, which is why "is injection working?" kept needing
+  manual archaeology.
+- Past reasoning is stripped from the context sent to the model (`context.stripReasoning`,
+  default on). In a real group session reasoning was 97% of the assistant text, and leaving it
+  in made the model imitate its own earlier thinking — the wobble that persisted after the tool
+  itself was fixed. It stays in the session log for inspection.
+- Sessions that leave scope no longer keep carrying memory: blocks injected earlier were left
+  in history and travelled with every later request. They are now removed, without injecting
+  anything new.
 
 ## 0.3.1 — 2026-11-17
 
