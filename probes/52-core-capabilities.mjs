@@ -35,7 +35,8 @@ ok(cfgSrc.includes('storeFacts') && cfgSrc.includes('storeEvents'), '三类内�
 // 四、规则与事实注入：规则块、事实块、经历块都在，且有预算与重发
 ok(idx.includes('buildInjection'), '有统一的注入组装');
 ok(/ruleMaxChars/.test(cfgSrc) && /maxChars/.test(cfgSrc), '规则与事实各有字符预算');
-ok(/ruleRefreshTurns/.test(cfgSrc), '规则块会定期重发');
+ok(read('../lib/prompt.js').includes('renderRuleSection'), '规则走系统提示段');
+ok(idx.includes("ctx.on('system-prompt/assemble'"), '系统提示装配已挂钩');
 ok(idx.includes('ruleScopeOf') || idx.includes('selectRuleFacts'), '规则按会话类型取');
 ok(read('../lib/inject.js').includes('withSpeaker: true'), '事实注入带归属人');
 

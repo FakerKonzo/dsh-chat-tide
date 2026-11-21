@@ -6,6 +6,17 @@ Minor version: memory editing is a new capability, and two context defaults chan
 (past reasoning is stripped, injected blocks are replaced rather than appended).
 No database migration.
 
+### Changed
+
+- **Rules moved into the system prompt.** They used to travel as a user message, which made
+  them look like something the user said, let compaction summarise them away, and forced a
+  periodic re-send (the old `context.ruleRefreshTurns`). A plugin-assembled section is
+  stronger, always present, and costs nothing extra: it is scoped by the same session check
+  the rest of the plugin uses, and it disappears cleanly when the plugin is disabled.
+- **Persona is now a choice, not a fixture.** `persona.mode` defaults to `off`, which leaves
+  identity and style entirely to the workspace docs (AGENTS/SOUL). Set it to `custom` and
+  `persona.text` becomes a system-prompt section. Nothing is appended when the text is empty.
+
 ### Added
 
 - Memory can now be edited from the settings page: change a fact value (written as a new
@@ -17,7 +28,8 @@ No database migration.
 - The header shows when data last arrived and when memory was last injected. Without those
   two timestamps there was no way to tell a working install from a silently broken one.
 
-### Fixed
+### Changed
+
 
 - Injected memory no longer accumulates in the conversation. Each turn used to append a fresh
   block, so a long session carried 84 rule blocks, 88 fact blocks and 51 episode blocks — the
