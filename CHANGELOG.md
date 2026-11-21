@@ -4,6 +4,15 @@
 
 _Work in progress. Published as part of the next release; see RELEASE.md for what triggers one._
 
+### Added
+
+- A **chat preset** (`tide-chat`) can now be registered by the plugin itself
+  (`preset.enabled`, default off) instead of being hand-written into a profile patch. It is
+  the host minimal preset plus what chat actually uses — file read/write, shell (for browser
+  CLI), schedule, skills, time context, file search — and it deliberately leaves persona
+  incomplete so workspace docs (AGENTS/SOUL) still load. Registration is disposed cleanly
+  when the switch is turned off.
+
 ### Changed
 
 - **Rules moved into the system prompt.** They used to travel as a user message, which made
