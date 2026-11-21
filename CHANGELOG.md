@@ -1,10 +1,8 @@
 # Changelog
 
-## 0.4.0 — 2026-11-20
+## Unreleased
 
-Minor version: memory editing is a new capability, and two context defaults changed
-(past reasoning is stripped, injected blocks are replaced rather than appended).
-No database migration.
+_Work in progress. Published as part of the next release; see RELEASE.md for what triggers one._
 
 ### Changed
 
@@ -16,6 +14,13 @@ No database migration.
 - **Persona is now a choice, not a fixture.** `persona.mode` defaults to `off`, which leaves
   identity and style entirely to the workspace docs (AGENTS/SOUL). Set it to `custom` and
   `persona.text` becomes a system-prompt section. Nothing is appended when the text is empty.
+
+## 0.4.0 — 2026-11-20
+
+Minor version: memory editing is a new capability, and two context defaults changed
+(past reasoning is stripped, injected blocks are replaced rather than appended).
+No database migration.
+
 
 ### Added
 
