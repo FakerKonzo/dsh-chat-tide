@@ -4,6 +4,14 @@
 
 _Work in progress. Published as part of the next release; see RELEASE.md for what triggers one._
 
+### Security
+
+- Owner identity no longer comes from memory. It used to be inferred from the existence of
+  `owner.*` facts, which made content grant permission: one writable ordinary fact naming a
+  user was enough for that user to be treated as the owner, and therefore to have rules
+  admitted. Identity now comes only from `owner.ids` in configuration and from the private-chat
+  binding that the adapter already whitelists.
+
 ### Fixed
 
 - A group member's suggestion could be extracted as `rule.*`, which is a **global** rule — one
