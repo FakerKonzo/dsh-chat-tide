@@ -53,17 +53,17 @@ const e2 = both.events.find((e) => e.content.includes('阿乙'));
 ok(e1?.userId === A.userId && e2?.userId === B.userId, '经历也按人归属');
 ok(e1?.speakerName === '阿甲' && e2?.speakerName === '阿乙', '经历带各自发言人');
 
-// 模型没给 speaker：退回最后一位发言人（旧行为，不崩）
+// 多人轮里模型没给 speaker：不能猜成最后一个人，宁可不收（记到别人名下比丢一条更糟）
 const noSpeaker = await run(
   JSON.stringify({ facts: [{ canonicalKey: 'k.a', value: '随便一句', subtype: 'profile' }], events: [], attention: [] }),
 );
-ok(noSpeaker.facts[0]?.userId === B.userId, '没给 speaker 时退回整段默认归属');
+ok(noSpeaker.facts.length === 0, '多人轮没给 speaker 就不收');
 
-// speaker 给了不存在的名字：也退回默认，不丢条目
+// speaker 给了不存在的名字：同样不收
 const unknown = await run(
   JSON.stringify({ facts: [{ canonicalKey: 'k.b', value: '又一句', subtype: 'profile', speaker: '查无此人' }], events: [], attention: [] }),
 );
-ok(unknown.facts[0]?.userId === B.userId, 'speaker 不在名单里就退回默认');
+ok(unknown.facts.length === 0, 'speaker 不在名单里就不收');
 
 // 单人场景不受影响：不该出现多人提示
 let seenSystem = '';

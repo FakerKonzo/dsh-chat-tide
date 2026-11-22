@@ -22,6 +22,14 @@ _Work in progress. Published as part of the next release; see RELEASE.md for wha
   head.
 - Only a few search candidates were fetched, so a conversation with many same-session hits
   could hide the cross-session one that mattered. The candidate pool is wider now.
+- Rule admission now checks the candidate's **subtype** as well as its key: rules are read
+  by subtype, so a non- key could smuggle a global rule in. Identity is also required —
+  the repair path used to run without it, and an unknown speaker was treated as allowed.
+- In a multi-speaker turn, a candidate without a matching speaker label is dropped instead of
+  being attributed to whoever spoke last. A wrongly attributed fact is worse than a missing one.
+- `extract.lookbackMinutes: 0` used to disable extraction itself, because current-turn rows
+  were read from the same time window. The current turn is now selected by correlation id and
+  the window only limits the prior context.
 - Our prompt sections are registered with `interpolate: false`: rule or persona text
   containing `{{...}}` must not be rendered as a template by the host.
 
