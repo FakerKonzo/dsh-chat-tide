@@ -4,6 +4,27 @@
 
 _Work in progress. Published as part of the next release; see RELEASE.md for what triggers one._
 
+### Fixed
+
+- A group member's suggestion could be extracted as `rule.*`, which is a **global** rule — one
+  sentence from anyone would then apply to every conversation. Rules are now refused unless
+  the speaker is the owner, both in the prompt and by a hard filter on the parsed items.
+- Two speakers who share a nickname were treated as one person (the multi-speaker test used
+  distinct *names*), so everything was attributed to whoever spoke last. It now counts
+  distinct users.
+- A turn with no messages of its own fell back to the whole lookback window, re-extracting
+  messages that had already been processed. Empty turns now do nothing.
+- The "already sent" episode set did not match the block that was actually rendered: it was
+  built from the delta while the block carried the full list, so budget-truncated episodes
+  were either re-sent forever or never sent.
+- Lookback context could push the current message out of the extraction text when the window
+  was tight. The current message is now reserved first and the prior text is trimmed from its
+  head.
+- Only a few search candidates were fetched, so a conversation with many same-session hits
+  could hide the cross-session one that mattered. The candidate pool is wider now.
+- Our prompt sections are registered with `interpolate: false`: rule or persona text
+  containing `{{...}}` must not be rendered as a template by the host.
+
 ### Added
 
 - A **chat preset** (`tide-chat`) can now be registered by the plugin itself
