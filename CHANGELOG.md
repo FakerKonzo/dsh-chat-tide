@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+_Work in progress. Published as part of the next release; see RELEASE.md for what triggers one._
+
+### Fixed
+
+- The owner field sat inside the injection-budget group, where nobody would look for it. It has
+  its own Identity group now.
+
 ## 0.5.0 — 2026-11-22
 
 Minor version: rules and persona moved into the system prompt, and the plugin can register its
