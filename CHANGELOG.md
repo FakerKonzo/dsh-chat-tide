@@ -30,6 +30,10 @@ _Work in progress. Published as part of the next release; see RELEASE.md for wha
 - `extract.lookbackMinutes: 0` used to disable extraction itself, because current-turn rows
   were read from the same time window. The current turn is now selected by correlation id and
   the window only limits the prior context.
+- Speaker labels were applied by array position after unnamed records had been filtered
+  out, so a message without a nickname shifted every later label and its evidence onto the
+  wrong person. Labels are keyed by record id now, and unnamed records keep a placeholder
+  label instead of disappearing.
 - Our prompt sections are registered with `interpolate: false`: rule or persona text
   containing `{{...}}` must not be rendered as a template by the host.
 
