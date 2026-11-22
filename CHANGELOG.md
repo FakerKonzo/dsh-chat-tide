@@ -6,8 +6,8 @@ _Work in progress. Published as part of the next release; see RELEASE.md for wha
 
 ### Fixed
 
-- The owner field sat inside the injection-budget group, where nobody would look for it. It has
-  its own Identity group now.
+- The owner field sat inside the injection-budget group, where nobody would look for it. Identity
+  and persona now lead the page: they are what a new install needs to decide first.
 
 ## 0.5.0 — 2026-11-22
 
