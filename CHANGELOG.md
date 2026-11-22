@@ -1,8 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.5.0 — 2026-11-22
 
-_Work in progress. Published as part of the next release; see RELEASE.md for what triggers one._
+Minor version: rules and persona moved into the system prompt, and the plugin can register its
+own chat preset. Several security fixes change who counts as the owner — read the Security
+section before upgrading. No database migration.
 
 ### Security
 
