@@ -6,6 +6,11 @@ _Work in progress. Published as part of the next release; see RELEASE.md for wha
 
 ### Security
 
+- Owner identity can be adopted explicitly: `POST /tide/api/owner/adopt` writes the chosen
+  openid into `owner.ids`, accepting only identities that already have a binding. There is no
+  inference step and no automatic promotion.
+- Private-chat messages are attributed by the `[name (openid)]` tag in the text, same as group
+  messages, instead of always being credited to the bound peer.
 - Private-chat bindings no longer grant owner identity. The QQ adapter defaults `c2cMode` to
   `open`, so **any** user who messages the bot privately gets a c2c binding; treating that as
   authorization made "whoever DMed me" the owner, and rules from that user were then admitted.
