@@ -6,11 +6,12 @@ _Work in progress. Published as part of the next release; see RELEASE.md for wha
 
 ### Security
 
-- Owner identity is resolved from the QQ adapter's live configuration when  is
-  empty: the host  service is read, and the adapter's private-chat list is used
-  only when  is  — under  that same list is an access control list,
-  and treating it as privilege would promote everyone allowed to chat. Missing plugin, missing
-  service, or an empty list all resolve to "no owner" with a logged reason.
+- Owner identity is resolved from the QQ adapter's live configuration when `owner.ids`
+  is empty: the host `configEditor` service is read, and the adapter's private-chat list
+  is used only when `c2cMode` is `open` — under `allowlist` that same list is an access
+  control list, and treating it as privilege would promote everyone allowed to chat.
+  A missing plugin, a missing service, or an empty list all resolve to "no owner" with a
+  logged reason.
 - Owner identity can be adopted explicitly: `POST /tide/api/owner/adopt` writes the chosen
   openid into `owner.ids`, accepting only identities that already have a binding. There is no
   inference step and no automatic promotion.
