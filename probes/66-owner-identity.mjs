@@ -7,32 +7,27 @@ const ok = (cond, label, extra = '') => {
   if (!cond) fail++;
 };
 
-const bindings = new Map([
-  ['s1', { adapter: 'qq', scope: 'c2c', peerId: 'OPENID_OWNER' }],
-  ['s2', { adapter: 'qq', scope: 'group', peerId: 'OPENID_GROUP' }],
-]);
-
 // 1) 配置里点名的算主人
-const cfg = resolveOwnerIds({ configured: 'A,B', bindings: new Map() });
+const cfg = resolveOwnerIds({ configured: 'A,B' });
 ok(cfg.has('A') && cfg.has('B') && cfg.size === 2, '配置里的 openid 生效', [...cfg].join(','));
 
-// 2) 私聊绑定的对端算主人，群聊的不算
-const viaBinding = resolveOwnerIds({ bindings });
-ok(viaBinding.has('OPENID_OWNER'), '私聊对端算主人');
-ok(!viaBinding.has('OPENID_GROUP'), '群不符合算主人');
+// 2) 关键：私聊绑定不再是授权。
+//    适配器 c2cMode 默认 open，任何人私聊一句都会产生 c2c 绑定；
+//    把绑定当主人等于「谁私聊过我谁就是主人」。
+const viaBinding = resolveOwnerIds({ bindings: new Map([['s1', { scope: 'c2c', peerId: 'OPENID_STRANGER' }]]) });
+ok(viaBinding.size === 0, '私聊绑定不再授予主人身份', String(viaBinding.size));
 
 // 3) 中文逗号、空格、空项都能容忍
-const messy = resolveOwnerIds({ configured: ' A ，B,  ,C ', bindings: new Map() });
+const messy = resolveOwnerIds({ configured: ' A ，B,  ,C ' });
 ok([...messy].sort().join(',') === 'A,B,C', '分隔符容错', [...messy].join('|'));
 
-// 4) 关键：随便传一个「事实里的 user_id」进来不构成身份
-//    （函数签名根本不吃事实，这里验证它只认两个来源）
-const fromFacts = resolveOwnerIds({ configured: '', bindings: new Map() });
-ok(fromFacts.size === 0, '没有任何可信来源时就是空集（不会从记忆里猜）');
+// 4) 没有任何配置时就是空集：宁可没人有权限，也不猜
+ok(resolveOwnerIds({}).size === 0, '未配置时为空集');
+ok(resolveOwnerIds({ configured: '   ' }).size === 0, '空白配置也算空');
 
-// 5) 配置与绑定合并去重
-const both = resolveOwnerIds({ configured: 'OPENID_OWNER', bindings });
-ok(both.size === 1 && both.has('OPENID_OWNER'), '重复来源合并成一条', String(both.size));
+// 5) 重复项去重
+const dup = resolveOwnerIds({ configured: 'A,A' });
+ok(dup.size === 1, '重复项合并', String(dup.size));
 
 console.log(fail === 0 ? '\n全部通过' : `\n${fail} 项失败`);
 process.exit(fail === 0 ? 0 : 1);

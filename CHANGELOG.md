@@ -6,6 +6,10 @@ _Work in progress. Published as part of the next release; see RELEASE.md for wha
 
 ### Security
 
+- Private-chat bindings no longer grant owner identity. The QQ adapter defaults `c2cMode` to
+  `open`, so **any** user who messages the bot privately gets a c2c binding; treating that as
+  authorization made "whoever DMed me" the owner, and rules from that user were then admitted.
+  Owner identity now comes only from `owner.ids`, with a warning logged when it is unset.
 - Owner identity no longer comes from memory. It used to be inferred from the existence of
   `owner.*` facts, which made content grant permission: one writable ordinary fact naming a
   user was enough for that user to be treated as the owner, and therefore to have rules
