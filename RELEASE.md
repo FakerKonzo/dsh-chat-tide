@@ -69,8 +69,9 @@ releases: users pay for every update with a re-download and an upgrade risk.
 
 - [ ] `npm pack --dry-run` shows only intended files (no `presets/private.json`, no `.db`)
 - [ ] Publish, then install from the registry into a clean profile
-- [ ] **Add `dsh-chat-tide` to that profile's `dsh.profile.bundles`**, otherwise the package
-      installs but never loads
+- [ ] Confirm the plugin manager registered the bundle: installing an enabled bundle writes it to
+      `dsh.profile.bundles` itself. A bundle installed while disabled is not added — enable it and
+      check again
 
 ## 7. After release
 

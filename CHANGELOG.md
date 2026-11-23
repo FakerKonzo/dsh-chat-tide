@@ -1,10 +1,19 @@
 # Changelog
 
-## Unreleased
+## 0.6.3 — 2026-11-23
 
-_Work in progress. Published as part of the next release; see RELEASE.md for what triggers one._
+Fixes only: import updates rules in place, a stale preview can no longer be applied, and
+the two client probes no longer depend on a Windows path.
 
 ### Fixed
+
+- Importing a rule that already exists now updates that rule in place: the fact id, attribution and
+  evidence tier stay, and only the value and scope change. Previously the import could only add or
+  overwrite blindly, so a group-only rule could come back as a global one.
+- The import preview could still be applied after the input changed: a stale response could win a
+  race against a newer paste. Responses now carry the input version and are dropped when it moved.
+- Two client probes read the module from a hard-coded Windows path, so CI failed on Linux before any
+  assertion ran. They now resolve the module relative to their own location.
 
 - Imported rules lost their scope: the plan dropped `appliesTo`, so a rule meant for groups was
   stored as a global rule and reached private chats too. The scope now travels with the plan and

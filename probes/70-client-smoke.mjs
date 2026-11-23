@@ -1,7 +1,7 @@
 // 客户端模块冒烟：用最小 React 桩真正跑一次模块体，抓未定义变量和坏结构
 import { readFileSync } from 'node:fs';
 
-const src = readFileSync('D:/Projects/dsh-chat-tide/lib/client.js', 'utf8');
+const src = readFileSync(new URL('../lib/client.js', import.meta.url), 'utf8');
 
 let fail = 0;
 const ok = (cond, label, extra = '') => {

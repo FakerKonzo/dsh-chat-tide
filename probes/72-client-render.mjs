@@ -1,7 +1,8 @@
 // 设置页真渲染：用桩 React 调一次组件，抓运行期错误（未定义变量、坏结构）
 import { readFileSync } from 'node:fs';
+import { DEFAULTS, GROUPS } from '../lib/schema.js';
 
-const src = readFileSync('D:/Projects/dsh-chat-tide/lib/client.js', 'utf8');
+const src = readFileSync(new URL('../lib/client.js', import.meta.url), 'utf8');
 
 let fail = 0;
 const ok = (cond, label, extra = '') => {
@@ -11,8 +12,10 @@ const ok = (cond, label, extra = '') => {
 
 const nodes = [];
 const stateQueue = [];
+let transferHooks = null;
 const h = (type, props, ...children) => {
-  const node = { type: typeof type === 'function' ? type.name || 'fn' : String(type), props: props ?? {}, children: children.flat(9) };
+  if (type.name === 'SettingsPage' || type.name === 'Summary') return type(props ?? {});
+  const node = { type: typeof type === 'function' ? type.name || 'fn' : String(type), component: type, props: props ?? {}, children: children.flat(9) };
   nodes.push(node);
   return node;
 };
@@ -21,7 +24,12 @@ const React = {
   createElement: h,
   Fragment: 'Fragment',
   useState(init) {
-    // 第一次渲染用初始值；组件内部 setState 一律记录不执行
+    if (transferHooks) {
+      const { slots } = transferHooks;
+      const index = transferHooks.index++;
+      if (!(index in slots)) slots[index] = typeof init === 'function' ? init() : init;
+      return [slots[index], (next) => { slots[index] = typeof next === 'function' ? next(slots[index]) : next; }];
+    }
     const value = stateQueue.length ? stateQueue.shift() : typeof init === 'function' ? init() : init;
     return [value, () => {}];
   },
@@ -30,7 +38,11 @@ const React = {
     void fn;
   },
   useMemo: (fn) => fn(),
-  useRef: (v) => ({ current: v }),
+  useRef(value) {
+    if (!transferHooks) return { current: value };
+    const index = transferHooks.index++;
+    return (transferHooks.slots[index] ??= { current: value });
+  },
   useCallback: (fn) => fn,
 };
 
@@ -43,9 +55,15 @@ globalThis.document = {
   addEventListener() {},
   removeEventListener() {},
 };
-globalThis.fetch = () => Promise.resolve({ ok: false, json: () => Promise.resolve({}) });
+let releasePreview;
+const fetch = (url) => {
+  if (url.endsWith('/import/preview')) return new Promise((resolve) => { releasePreview = resolve; });
+  return Promise.resolve({ ok: false, json: () => Promise.resolve({}) });
+};
 
-new Function('window', 'document', 'globalThis', 'fetch', src)(globalThis.window, globalThis.document, globalThis, globalThis.fetch);
+new Function('window', 'document', 'globalThis', 'fetch', 'navigator', src)(
+  globalThis.window, globalThis.document, globalThis, fetch, { language: 'zh-CN' },
+);
 const entry = globalThis.__entry;
 const api = entry.factory((name) => modules[name] ?? React);
 
@@ -81,45 +99,6 @@ await api.apply(ctx).catch((err) => {
 ok(typeof registered === 'function', '设置页组件已注册');
 
 if (typeof registered === 'function') {
-  // 桩数据：页面需要 groups/fields/state
-  const settingsPayload = {
-    ok: true,
-    groups: [
-      {
-        title: ['日常', 'Everyday'],
-        hint: ['提示', 'hint'],
-        advanced: false,
-        collapsible: false,
-        defaultOpen: true,
-        fields: [
-          ['scope.mode', ['在哪些聊天里使用', 'Which chats'], 'select', ['follow', 'off'], null, { labels: { follow: ['跟随 QQBot', 'Follow'], off: ['关闭', 'Off'] } }],
-          ['scope.sessionIds', ['选中的聊天', 'Chosen'], 'sessions', null, { when: ['scope.mode', 'sessions'] }],
-          ['extract.enabled', ['自动记事', 'Remember'], 'bool', null, { hint: ['关掉后暂停', 'off pauses'] }],
-          ['owner.ids', ['谁可以定规矩', 'Who can set rules'], 'owner'],
-          ['routing.quietStart', ['从', 'From'], 'time', null, { when: ['routing.quietEnabled', true] }],
-          ['routing.maxWakesPerDay', ['每天最多', 'Attempts'], 'num'],
-        ],
-      },
-      {
-        title: ['高级参数', 'Advanced'],
-        hint: ['高级', 'adv'],
-        advanced: true,
-        collapsible: false,
-        defaultOpen: true,
-        fields: [['routing.high', ['高位阈值', 'High'], 'num']],
-      },
-    ],
-    fields: [
-      { key: 'scope.mode', value: 'follow', overridden: false },
-      { key: 'scope.sessionIds', value: '', overridden: false },
-      { key: 'extract.enabled', value: true, overridden: false },
-      { key: 'owner.ids', value: '', overridden: false },
-      { key: 'routing.quietStart', value: '00:00', overridden: false },
-      { key: 'routing.maxWakesPerDay', value: 20, overridden: false },
-      { key: 'routing.high', value: 0.55, overridden: false },
-    ],
-  };
-
   // 让 settings 已经加载完成：模拟 useState 的初始值序列由组件内部决定，
   // 这里直接调用组件，Bool 值为初始值（loading=true → 只渲染 loading 文案）
   try {
@@ -134,10 +113,9 @@ if (typeof registered === 'function') {
   stateQueue.push({
     loading: false,
     error: null,
-    groups: settingsPayload.groups,
-    fields: settingsPayload.fields,
-    values: Object.fromEntries(settingsPayload.fields.map((f) => [f.key, f.value])),
-    fieldMeta: Object.fromEntries(settingsPayload.fields.map((f) => [f.key, { overridden: false }])),
+    groups: GROUPS,
+    values: DEFAULTS,
+    fieldMeta: {},
     dirty: {},
     saving: false,
     saved: false,
@@ -168,6 +146,36 @@ if (typeof registered === 'function') {
     ok(Boolean(out), '摘要视图不抛错');
   } catch (err) {
     ok(false, '摘要视图不抛错', String(err?.message ?? err));
+  }
+
+  const transfer = nodes.find((node) => node.type === 'Transfer')?.component;
+  ok(typeof transfer === 'function', '设置页包含导入面板');
+  if (transfer) {
+    transferHooks = { slots: [], index: 0 };
+    const render = () => {
+      transferHooks.index = 0;
+      nodes.length = 0;
+      transfer();
+    };
+    const button = (label) => nodes.find((node) => node.type === 'button'
+      && node.children.some((child) => String(child).includes(label)));
+    const edit = (value) => nodes.find((node) => node.type === 'textarea').props.onChange({ target: { value } });
+    render();
+    edit('{"rules":[{"key":"rule.old","value":"旧输入"}]}');
+    render();
+    const oldRequest = button('预览导入').props.onClick();
+    render();
+    edit('{"rules":[]}');
+    const response = { ok: true, json: async () => ({ ok: true, settings: [], rules: { added: [], updated: [] } }) };
+    releasePreview(response);
+    await oldRequest;
+    render();
+    ok(!button('确认导入'), '编辑期间返回的旧预览不能确认');
+    const newRequest = button('预览导入').props.onClick();
+    releasePreview(response);
+    await newRequest;
+    render();
+    ok(Boolean(button('确认导入')), '当前输入重新预览后可以确认');
   }
 }
 

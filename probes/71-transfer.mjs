@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { openDatabase } from '../lib/db.js';
 import { setOverride, getOverrides } from '../lib/settings.js';
 import { writeFact } from '../lib/facts.js';
+import { selectRuleFacts } from '../lib/context.js';
 import { planImport, applyImport, createBackup, assertRuleInput } from '../lib/transfer.js';
 
 const CACHE = fileURLToPath(new URL('../.cache/', import.meta.url));
@@ -68,6 +69,29 @@ ok(badApplied.rules === 0 && badApplied.ok === false, '非规矩键与空值都�
 // 2b) 导入的规矩要按原来的适用范围落库，不能一律变成全局
 const groupRule = db.prepare("SELECT applies_to a FROM fact WHERE canonical_key='rule.group_only' AND status='active'").get();
 ok(groupRule?.a === 'group', '适用范围落库仍为 group', JSON.stringify(groupRule));
+
+const existingRule = writeFact(db, {
+  userId: 'TEST_OWNER',
+  canonicalKey: 'rule.existing',
+  subtype: 'rule',
+  value: '原来的规矩',
+  provenanceTier: 'human_explicit',
+});
+const scopeChange = planImport(db, { rules: [{ key: 'rule.existing', value: '原来的规矩', appliesTo: 'group' }] });
+ok(scopeChange.rules.updated[0]?.factId === existingRule.factId, '只改范围也会预览为更新');
+ok(applyImport(db, scopeChange).rules === 1, '只改范围能更新原记录');
+ok(!selectRuleFacts(db, { scope: 'private' }).some((r) => r.factId === existingRule.factId), '改为仅群聊后，私聊不再收到该规矩');
+
+const contentChange = planImport(db, { rules: [{ key: 'rule.existing', value: '更新后的规矩', appliesTo: 'private' }] });
+ok(applyImport(db, contentChange).rules === 1, '同时更新正文和范围');
+const updatedRule = selectRuleFacts(db).filter((r) => r.canonicalKey === 'rule.existing');
+ok(updatedRule.length === 1 && updatedRule[0].factId === existingRule.factId && updatedRule[0].userId === 'TEST_OWNER'
+  && updatedRule[0].tier === 'human_explicit' && updatedRule[0].value === '更新后的规矩' && updatedRule[0].appliesTo === 'private',
+  '保留原规矩归属和证据等级，更新正文和范围', JSON.stringify(updatedRule));
+
+writeFact(db, { userId: 'TEST_OTHER', canonicalKey: 'rule.existing', subtype: 'rule', value: '同名规矩', provenanceTier: 'human_explicit' });
+const ambiguous = planImport(db, { rules: [{ key: 'rule.existing', value: '无法确定要改哪一条', appliesTo: 'group' }] });
+ok(ambiguous.error === 'ambiguous-rule-key', '已有多条同名规矩时拒绝含糊的更新');
 
 // 3) 版本过新要拒绝，不能瞎读
 ok(planImport(db, { kind: 'tide-config', version: 99 }).ok === false, '未来版本被拒绝');
