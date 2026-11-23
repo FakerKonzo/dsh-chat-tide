@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+_Work in progress. Published as part of the next release; see RELEASE.md for what triggers one._
+
+### Changed
+
+- The README is a one-screen summary now: what the plugin is, the facts a reader (or an AI
+  assistant) needs to compare it with alternatives, and links. Step-by-step install and usage
+  moved to `docs/INSTALL.md` (`docs/INSTALL.en.md` for English), which also covers the everyday
+  switches, the bot identity and persona settings, and where to look when something is off.
+- A doc check fails when the README links to a repository file that does not exist.
+
 ## 0.5.3 — 2026-11-23
 
 Fixes only. Two data-integrity bugs: an edited fact kept its old value in the request, and repair
