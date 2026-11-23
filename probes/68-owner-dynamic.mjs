@@ -18,9 +18,13 @@ ok([...explicit.ids].join(',') === 'OWNER' && explicit.reason === 'configured', 
 const openLit = ownerIdsFromQqbot({ qqbot: { c2cMode: 'open', c2cAllow: ['A', 'B'] } });
 ok(openLit.ids.size === 2 && openLit.reason === 'qqbot-open-list', 'open 模式下的名单生效', openLit.reason);
 
-// 3) allowlist 模式下的名单是准入清单，不是权限清单
+// 3) allowlist 多人：准入清单不说明谁是主人
 const accessList = ownerIdsFromQqbot({ qqbot: { c2cMode: 'allowlist', c2cAllow: ['A', 'B'] } });
-ok(accessList.ids.size === 0 && accessList.reason === 'allowlist-is-access-control', 'allowlist 模式不授产权', accessList.reason);
+ok(accessList.ids.size === 0 && accessList.reason === 'allowlist-is-access-control', '多人白名单不授产权', accessList.reason);
+
+// 3b) allowlist 单人：通常就是主人本人把自己加进去
+const one = ownerIdsFromQqbot({ qqbot: { c2cMode: 'allowlist', c2cAllow: ['A'] } });
+ok(one.ids.size === 1 && one.ids.has('A') && one.reason === 'qqbot-allowlist-single', '单人白名单视为主人', one.reason);
 
 // 4) 没有 qqbot 插件：不影响，只是空
 const noPlugin = ownerIdsFromQqbot({});

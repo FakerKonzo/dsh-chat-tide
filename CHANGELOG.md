@@ -1,8 +1,9 @@
 # Changelog
 
-## Unreleased
+## 0.6.0 — 2026-11-23
 
-_Work in progress. Published as part of the next release; see RELEASE.md for what triggers one._
+Minor version: the settings page is reorganised, automatic remembering gained a master switch, and
+export/import/backup arrived. No database migration.
 
 ### Added
 
