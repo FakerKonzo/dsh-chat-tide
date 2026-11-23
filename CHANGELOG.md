@@ -1,8 +1,9 @@
 # Changelog
 
-## Unreleased
+## 0.5.3 — 2026-11-23
 
-_Work in progress. Published as part of the next release; see RELEASE.md for what triggers one._
+Fixes only. Two data-integrity bugs: an edited fact kept its old value in the request, and repair
+extraction credited a whole round to one speaker.
 
 ### Fixed
 
