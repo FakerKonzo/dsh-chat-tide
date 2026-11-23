@@ -6,7 +6,7 @@ Tide (`dsh-chat-tide`) is a chat-memory plugin for DeepSeek Harness (DSH). It le
 
 - **Remembers useful details**: preferences, to-dos and things that happened are extracted with the model already selected for that chat — the plugin never picks its own.
 - **Memories are correctable**: facts can be edited or deleted, deletions keep an audit row, and answers only carry current values plus possibly relevant events.
-- **Answers when it should**: group messages pass a gate first, and anything that should not be answered is dropped before the model call; borderline cases go to the model, and the assistant can stay silent for the whole turn.
+- **Joins in when it makes sense.** Tide checks whether a group message is worth a reply. If the assistant takes a look, it can still decide to stay quiet.
 - **Rules stay resident**: chat rules and red lines live in the system prompt, so they neither occupy the conversation nor get summarised away.
 - **Cross-chat**: different chats can optionally share one memory; automatic selection for a group reply skips private-chat sources by default.
 
