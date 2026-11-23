@@ -65,6 +65,26 @@ releases: users pay for every update with a re-download and an upgrade risk.
 - [ ] Tag the release (`vX.Y.Z`) and push both `main` and the tag
 - [ ] `CONTRIBUTING.md` present; issue templates optional
 
+## 5b. npm dist-tags
+
+A dist-tag is an alias for one version. `npm install dsh-chat-tide` follows `latest`; naming a tag
+(`dsh-chat-tide@stable`, `@next`) installs that channel instead.
+
+| Tag | Meaning | How it moves |
+|---|---|---|
+| `latest` | The version a bare install gets | npm moves it on every plain `npm publish` |
+| `stable` | Explicit alias of the newest release | `npm dist-tag add dsh-chat-tide@<version> stable` |
+| `next` | Pre-release or release candidate | `npm publish --tag next` |
+
+**A pre-release must be published with `--tag next`.** A plain publish would move `latest` onto
+it and every user's next update would install a candidate. After publishing a release, point
+`stable` at the same version so both channels agree:
+
+```sh
+npm publish                 # or: npm publish --tag next  (candidates)
+npm dist-tag add dsh-chat-tide@<version> stable
+```
+
 ## 6. Optional npm publish
 
 - [ ] `npm pack --dry-run` shows only intended files (no `presets/private.json`, no `.db`)
