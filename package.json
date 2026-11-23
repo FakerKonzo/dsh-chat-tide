@@ -21,7 +21,8 @@
     "CONTRIBUTING.md",
     "RELEASE.md",
     "CHANGELOG.md",
-    "LICENSE"
+    "LICENSE",
+    "docs"
   ],
   "dsh": {
     "bundle": {

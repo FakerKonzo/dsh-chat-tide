@@ -1,6 +1,6 @@
 // 文档一致性：路由、数据目录、配置键、默认值、探针数
-import { readFileSync, readdirSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ROUTE, API_BASE, DATA_DIRNAME, DB_FILENAME, LOG_CLIENT_LOAD, LOG_PAGE_ERROR, STYLE_PREFIX } from '../lib/const.js';
 import { DEFAULTS } from '../lib/schema.js';
@@ -43,6 +43,11 @@ ok(unknown.length === 0, 'README 配置示例的键都在配置里', JSON.string
 const hostPaths = [...md.matchAll(/[A-Z]:\\[^\s`)]+/g)].map((m) => m[0]);
 ok(hostPaths.length === 0, 'README 无本机绝对路径', JSON.stringify(hostPaths));
 ok(!/cd works\//.test(md), 'README 不写个人工作区路径');
+
+// README 里链到的仓库内文档必须真的存在（指向不存在的指南，比不写还糟）
+const links = [...md.matchAll(/\]\((\.\/[^)]+|\.\.\/[^)]+)\)/g)].map((m) => m[1]);
+const missing = links.filter((rel) => !existsSync(resolve(root, rel.replace(/^\.\//, ''))));
+ok(missing.length === 0, 'README 的仓库内链接都存在', JSON.stringify(missing));
 
 // 4) README 表格里写的默认值必须与 schema 一致
 const tableRows = [...md.matchAll(/^\| `([a-z.]+)` \| ([^|]+?) \|/gm)].map((m) => [m[1], m[2].trim()]);
