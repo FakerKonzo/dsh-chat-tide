@@ -152,6 +152,9 @@ if (typeof registered === 'function') {
     ok(false, '已加载状态渲染不抛错', String(err?.stack ?? err).split('\n').slice(0, 3).join(' | '));
   }
 
+  // 回归：折叠组依赖 setOpen，定义和使用顺序都要在
+  ok(/const setOpen =/.test(src), 'setOpen 已定义');
+
   // 回归：初始状态必须带 open/showAdvanced，否则加载完成后渲染会读 undefined
   ok(/showAdvanced: false, open: \{\}/.test(src), '初始状态包含 open 与 showAdvanced');
 

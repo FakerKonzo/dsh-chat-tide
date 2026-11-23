@@ -40,18 +40,20 @@ const plan = planImport(db, {
   settings: { 'routing.maxWakesPerDay': 20, 'persona.mode': 'custom', 'persona.text': '短一点', 'bogus.key': 1 },
   rules: [
     { key: 'rule.output.length', value: '群聊一到三行' },
-    { key: 'rule.output.style', value: '不写小论文' },
+    { key: 'rule.output.style', value: '不写小论文', appliesTo: 'group' },
+    { key: 'rule.group_only', value: '仅群聊', appliesTo: 'group' },
   ],
 });
 ok(plan.ok, '预览成功');
 ok(plan.settings.length === 2, '只列出真正变化的设置', String(plan.settings.length));
 ok(plan.skippedKeys.includes('bogus.key'), '未知键被标出来');
-ok(plan.rules.added.length === 1 && plan.rules.same === 1, '规矩区分新增与相同');
+ok(plan.rules.added.length === 2 && plan.rules.same === 1, '规矩区分新增与相同', JSON.stringify(plan.rules));
+ok(plan.rules.added[0]?.appliesTo === 'group', '新增规矩保留适用范围', JSON.stringify(plan.rules.added[0]));
 
 // 2) 应用：设置写进去、规矩新增、坏规矩被拒
 const applied = applyImport(db, plan, { assertRule: assertRuleInput });
 ok(applied.settings === 2, '设置写入两条', String(applied.settings));
-ok(applied.rules === 1, '规矩新增一条', String(applied.rules));
+ok(applied.rules === 2, '规矩新增两条', String(applied.rules));
 ok(getOverrides(db)['persona.mode'] === 'custom', '人设模式已改');
 ok(getOverrides(db)['persona.text'] === '短一点', '人设文本已写');
 
@@ -62,6 +64,10 @@ const badPlan = planImport(db, {
 });
 const badApplied = applyImport(db, badPlan, { assertRule: assertRuleInput });
 ok(badApplied.rules === 0 && badApplied.ok === false, '非规矩键与空值都被拒绝', JSON.stringify(badApplied.rejected));
+
+// 2b) 导入的规矩要按原来的适用范围落库，不能一律变成全局
+const groupRule = db.prepare("SELECT applies_to a FROM fact WHERE canonical_key='rule.group_only' AND status='active'").get();
+ok(groupRule?.a === 'group', '适用范围落库仍为 group', JSON.stringify(groupRule));
 
 // 3) 版本过新要拒绝，不能瞎读
 ok(planImport(db, { kind: 'tide-config', version: 99 }).ok === false, '未来版本被拒绝');

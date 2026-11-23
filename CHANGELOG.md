@@ -1,5 +1,24 @@
 # Changelog
 
+## Unreleased
+
+_Work in progress. Published as part of the next release; see RELEASE.md for what triggers one._
+
+### Fixed
+
+- Imported rules lost their scope: the plan dropped `appliesTo`, so a rule meant for groups was
+  stored as a global rule and reached private chats too. The scope now travels with the plan and
+  is asserted after import.
+- The import preview could still hide changes: the "show every change" toggle only appeared when
+  more than eight *settings* changed, so ten changed rules still listed eight, and each rule body
+  was cut at 80 characters. The toggle now counts rules too, and bodies are shown in full.
+- Editing the pasted JSON kept the previous preview, so confirming imported what was previewed
+  earlier rather than what was on screen. Editing clears the preview; you must preview again.
+- A failed backup verification left the copy behind and the read-only connection open. Both are
+  cleaned up now, alongside the existing abort and error paths.
+- Collapsing "More" threw `setOpen is not defined`: the helper was used but never declared.
+  A regression check now asserts it exists.
+
 ## 0.6.2 — 2026-11-23
 
 Fixes only: conditional fields, the import preview, and backup cleanup.
