@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.1 — 2026-11-23
+
+Fixes only: the settings page rendered blank after loading.
+
+### Fixed
+
+- The settings page came up blank after loading. Its initial state lacked the collapse and
+  advanced-shown fields, so the first group render read a property of undefined. A render probe
+  now drives the loaded state as well as the loading state.
+
 ## 0.6.0 — 2026-11-23
 
 Minor version: the settings page is reorganised, automatic remembering gained a master switch, and
