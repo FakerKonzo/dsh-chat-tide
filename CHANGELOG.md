@@ -4,6 +4,37 @@
 
 _Work in progress. Published as part of the next release; see RELEASE.md for what triggers one._
 
+### Added
+
+- Export, import and backup, on the settings page. Export writes settings, persona and rules to
+  one JSON file; import previews the differences first and only touches settings and rules.
+  Backup takes a consistent snapshot (writes still in the WAL included), reopens it read-only to
+  verify integrity and row counts, then hands over the file.
+- `extract.enabled`: one switch for automatic remembering. Turning it off stops normal extraction
+  **and** the repair pass, which used to keep writing behind the user's back; raw chat logs stay.
+
+### Changed
+
+- The settings page is now four blocks: Everyday, Your bot, More, Advanced. Everyday holds the
+  five things a user actually changes; tuning knobs sit behind "Show advanced settings" and
+  deployment-only switches (preset registration, subagents, grey-zone model fallback) are off the
+  page. Field labels were rewritten in plain language, and dependent fields appear only when the
+  switch they depend on is on.
+- Identity and persona are saved as text again. The value check keyed on a hand-maintained list of
+  string fields, so every new text field (owner openids, persona mode, persona text) failed with
+  `not-a-number`. The type now comes from the field declaration itself.
+- Controlled fields reject values outside their declared options, and time fields are validated
+  instead of being stored as free text.
+
+### Fixed
+
+- Clearing a number input stored 0, which silently zeroed a budget. Empty input is no longer
+  coerced.
+
+## Unreleased
+
+_Work in progress. Published as part of the next release; see RELEASE.md for what triggers one._
+
 ### Fixed
 
 - The bundled patch shipped `scope.mode: allowlist` with placeholder peers, so a fresh install
