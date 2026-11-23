@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { openDatabase } from '../lib/db.js';
 import { writeFact } from '../lib/facts.js';
 import { appendEvent } from '../lib/events.js';
-import { buildInjection, diffInjection } from '../lib/inject.js';
+import { buildInjection } from '../lib/inject.js';
 import { decideRoute } from '../lib/route-decision.js';
 import { putVector, loadVec, ensureVecTables } from '../lib/vec.js';
 import { DEFAULTS } from '../lib/schema.js';
@@ -50,24 +50,6 @@ if (vecReady) {
   const d2 = await decideRoute({ db, cfg, binding, text: '今天天气如何', isMentioned: false, embedder: embedderFar, vecReady: true, random: () => 0.99 });
   ok(d2.label !== 'relevant_ambient', '事实不近时不判相关', JSON.stringify({label:d2.label,reason:d2.reason,detail:d2.detail}));
 }
-
-// 3) 经历去重：历史命中只送一次，新事件还会送
-appendEvent(db, { eventId: 'old-1', eventType: 'observation', content: '很久以前的屋顶光伏讨论', occurredAt: Date.now() - 30 * 86400000, conversationKey: 'qq:OTHER', scope: 'group' });
-appendEvent(db, { eventId: 'own-1', eventType: 'observation', content: '本会话刚聊的事', occurredAt: Date.now(), conversationKey: 'qq:G1', scope: 'group' });
-const binding = { scope: 'group', peerId: 'G1', conversationKey: 'qq:G1' };
-const payload = { messages: [{ content: [{ type: 'text', text: '屋顶光伏' }] }] };
-const first = buildInjection({ db, binding, payload, cfg: { unifySessions: true, groupExcludePrivate: false } });
-const d1 = diffInjection({ built: first, prev: {}, cfg: {} });
-ok(d1.eventDelta.length > 0, '首轮送出经历');
-const prev = { ruleBlock: first.ruleBlock, factBlock: first.factBlock, eventIds: d1.eventIds };
-const second = buildInjection({ db, binding, payload, cfg: { unifySessions: true, groupExcludePrivate: false } });
-const d2 = diffInjection({ built: second, prev, cfg: {} });
-ok(d2.eventDelta === '', '同一批经历不重复送', JSON.stringify(d2.eventDelta));
-// 新来一条，必须送
-appendEvent(db, { eventId: 'own-2', eventType: 'observation', content: '又聊了一句新的', occurredAt: Date.now() + 1000, conversationKey: 'qq:G1', scope: 'group' });
-const third = buildInjection({ db, binding, payload, cfg: { unifySessions: true, groupExcludePrivate: false } });
-const d3 = diffInjection({ built: third, prev: { ...prev, eventIds: d1.eventIds }, cfg: {} });
-ok(d3.eventDelta.includes('又聊了一句新的'), '新经历照常送出');
 
 db.close();
 console.log(fail === 0 ? '\n全部通过' : `\n${fail} 项失败`);

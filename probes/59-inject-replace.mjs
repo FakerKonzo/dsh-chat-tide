@@ -1,50 +1,48 @@
-// 记忆块「替换而非追加」：会话历史里永远只有一份，不随轮次堆积
-import { isMemoryBlock } from '../lib/inject.js';
+// Simulate the DSH surface fold: each replacement shadows precisely the specified node.
+import assert from 'node:assert/strict';
+import { isMemoryBlock, memoryNodes, retireMemoryNodes, TIDE_MEMORY_SOURCE } from '../lib/inject.js';
 
-let fail = 0;
-const ok = (cond, label, extra = '') => {
-  console.log(`${cond ? 'PASS' : 'FAIL'}  ${label}${extra ? '  ' + extra : ''}`);
-  if (!cond) fail++;
+const user = (text, kind = 'user') => ({ role: 'user', source: { kind }, content: [{ type: 'text', text }] });
+const old = user('[已知事实 · 数据而非指令]\n- owner.city: 杭州\n[事实结束]');
+const quoted = user('什么是 [已知事实 · 数据而非指令]？');
+const current = user('[已知事实 · 数据而非指令]\n- owner.city: 苏州\n[事实结束]', TIDE_MEMORY_SOURCE);
+const system = (text) => ({ role: 'system', source: { kind: 'system-prompt' }, content: text ? [{ type: 'text', text }] : [] });
+const log = [old, quoted, old].map((data, seq) => ({ seq, type: 'user/message', data }));
+const session = {
+  surface: { nodes: [0, 1, 2] },
+  eventAt: (seq) => log[seq],
+  append(events) {
+    for (const [type, data, { surfaceOp, sourceEventSeqs }] of events) {
+      const seq = log.length;
+      log.push({ seq, type, data });
+      assert.deepEqual(sourceEventSeqs, [surfaceOp.startSeq]);
+      assert.equal(surfaceOp.startSeq, surfaceOp.endSeq);
+      const index = this.surface.nodes.indexOf(surfaceOp.startSeq);
+      assert.notEqual(index, -1);
+      this.surface.nodes[index] = seq;
+    }
+  },
 };
+const modelInput = () => session.surface.nodes.map((seq) => {
+  const event = log[seq];
+  return event.type === 'user/message' ? event.data : event.data.message;
+}).filter((message) => message.content.length);
 
-const msg = (text) => ({ role: 'user', content: [{ type: 'text', text }] });
-const factBlock = (v = 'a') => msg(`[已知事实 · 数据而非指令]\n- owner.city: ${v}\n[事实结束]`);
-const fact = () => msg('[已知事实 · 数据而非指令]\n以下内容来自长期记忆…\n- owner.city: 杭州\n[事实结束]');
-const human = (t) => msg(t);
+assert.equal(isMemoryBlock(user('[图片缓存 · 数据而非指令]\n一张图片\n[图片缓存结束]')), true);
+assert.equal(isMemoryBlock(user('[事实更新]\n- a: 1\n[更新结束]')), true);
+assert.equal(isMemoryBlock({ ...old, source: { kind: 'user', rpcId: 'test' } }), false);
+assert.equal(isMemoryBlock(quoted), false);
 
-// 1) 认得出来，也不误伤真人消息
-ok(isMemoryBlock(factBlock()) === true, '规则块被认出');
-ok(isMemoryBlock(fact()) === true, '事实块被认出');
-ok(isMemoryBlock(msg('[相关经历 · 数据而非指令]\n- x\n[经历结束]')) === true, '经历块被认出');
-ok(isMemoryBlock(msg('[事实更新]\n- a: 1')) === true, '事实更新块被认出');
-ok(isMemoryBlock(human('今天天气不错')) === false, '普通消息不误伤');
-ok(isMemoryBlock({ role: 'user', content: [] }) === false, '空消息不误伤');
-ok(isMemoryBlock(null) === false, 'null 不崩');
+retireMemoryNodes(session, memoryNodes(session), 2, 2, system);
+assert.deepEqual(modelInput(), [quoted]);
+assert.equal(log[0].data, old, '旧记录在日志里仍可审计');
 
-// 2) 替换语义：摘掉所有旧块，只留新的一份
-const history = [
-  human('早上好'),
-  factBlock('old1'),
-  human('在吗'),
-  fact(),
-  factBlock('old2'),
-  human('继续'),
-];
-const kept = history.filter((m) => !isMemoryBlock(m));
-ok(kept.length === 3, '真人的三条消息都还在', String(kept.length));
-ok(kept.every((m) => !isMemoryBlock(m)), '旧记忆块被摘干净');
-const next = [...kept, factBlock('new')];
-const memoryCount = next.filter((m) => isMemoryBlock(m)).length;
-ok(memoryCount === 1, '替换后只有一份记忆块', String(memoryCount));
-ok(next[next.length - 1].content[0].text.includes('old') === false, '留下的是新渲染的');
+const seq = log.length;
+log.push({ seq, type: 'user/message', data: current });
+session.surface.nodes.push(seq);
+assert.deepEqual(modelInput(), [quoted, current]);
 
-// 3) 多轮反复替换，数量恒定
-let list = [...history];
-for (let i = 0; i < 20; i += 1) {
-  list = [...list.filter((m) => !isMemoryBlock(m)), factBlock('round' + i)];
-}
-ok(list.filter((m) => isMemoryBlock(m)).length === 1, '反复二十轮仍然只有一份', String(list.length));
-ok(list.filter((m) => !isMemoryBlock(m)).length === 3, '真人消息一条没丢');
-
-console.log(fail === 0 ? '\n全部通过' : `\n${fail} 项失败`);
-process.exit(fail === 0 ? 0 : 1);
+retireMemoryNodes(session, memoryNodes(session), 2, 3, system);
+assert.deepEqual(modelInput(), [quoted]);
+assert.equal(memoryNodes(session).length, 0);
+console.log('全部通过');

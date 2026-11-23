@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { openDatabase } from '../lib/db.js';
 import { writeFact } from '../lib/facts.js';
 import { appendEvent } from '../lib/events.js';
-import { buildInjection, diffInjection } from '../lib/inject.js';
+import { buildInjection } from '../lib/inject.js';
 import { upsertPerson } from '../lib/people.js';
 
 const FILE = fileURLToPath(new URL('../.cache/probe-inject-e2e.db', import.meta.url));
@@ -75,18 +75,6 @@ appendEvent(db, {
 });
 const e1 = buildInjection({ db, binding: groupBinding, payload, cfg: {} });
 ok(e1.eventBlock.includes('屋顶光伏'), '本会话经历必带');
-
-// 6) 增量：第二次同样内容不重复给事实
-const prev = { ruleBlock: g1.ruleBlock, factBlock: g1.factBlock, eventAt: g1.newestAt };
-const again = buildInjection({ db, binding: groupBinding, payload, cfg: {}, prev });
-const d = diffInjection({ built: again, prev, cfg: {} });
-ok(d.factDelta === '', '事实未变不重复注入');
-
-// 7) 事实变了要重发
-put('owner.group_project', '群里说过的项目（更新）', 'group');
-const changed = buildInjection({ db, binding: groupBinding, payload, cfg: {}, prev });
-const d2 = diffInjection({ built: changed, prev, cfg: {} });
-ok(d2.factDelta.includes('更新'), '事实变化时重发事实块');
 
 db.close();
 console.log(fail === 0 ? '\n全部通过' : `\n${fail} 项失败`);

@@ -1,14 +1,9 @@
 // 补偿抽取自测（假模型，不联网）
-import { rmSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { openDatabase } from '../lib/db.js';
 import { appendRawLog } from '../lib/events.js';
 import { findMissedExtractions, runRepairExtractions } from '../lib/repair.js';
 
-const FILE = fileURLToPath(new URL('../.cache/probe-repair.db', import.meta.url));
-rmSync(FILE, { force: true });
-for (const ext of ['-wal', '-shm']) rmSync(FILE + ext, { force: true });
-const db = openDatabase(FILE);
+const db = openDatabase(':memory:');
 let fail = 0;
 const ok = (cond, label, extra = '') => {
   console.log(`${cond ? 'PASS' : 'FAIL'}  ${label}${extra ? '  ' + extra : ''}`);
@@ -41,6 +36,25 @@ ok(again.length === 0, '补完不再重复出现');
 
 const rep2 = await runRepairExtractions(db, { complete, limit: 10, now, log: () => {} });
 ok(rep2.attempted === 0, '再次补跑无事可做');
+
+const groupMessage = { recordType: 'message', adapter: 'test', peerId: 'p2', conversationKey: 'local:p2', correlationId: 's2:1' };
+appendRawLog(db, { ...groupMessage, recordId: 'source-a', userId: 'user-a', payload: '我今天学会了滑冰', metadata: { senderName: '小明' }, observedAt: now - 2 });
+appendRawLog(db, { ...groupMessage, recordId: 'source-b', userId: 'user-b', payload: '我今天去杭州了', metadata: { senderName: '小明' }, observedAt: now - 1 });
+const grouped = await runRepairExtractions(db, {
+  now,
+  complete: async (messages) => {
+    const text = messages.at(-1).content;
+    ok(text.includes('[消息1] 小明 我今天学会了滑冰') && text.includes('[消息2] 小明 我今天去杭州了'), '每条原话带自己的消息编号');
+    return JSON.stringify({
+      facts: [{ canonicalKey: 'other.current_city', value: '杭州', speaker: '消息2' }],
+      events: [{ content: '学会滑冰', speaker: '消息1' }, { content: '归属不明确', speaker: '小明' }],
+    });
+  },
+});
+const event = db.prepare("SELECT user_id, source_record_id FROM event WHERE event_type='observation' AND correlation_id='s2:1'").get();
+const fact = db.prepare("SELECT user_id, source_record_id FROM fact WHERE canonical_key='other.current_city'").get();
+ok(grouped.events === 1 && event?.user_id === 'user-a' && event?.source_record_id === 'source-a', '经历归甲，缺少有效标签的候选不写入');
+ok(grouped.facts === 1 && fact?.user_id === 'user-b' && fact?.source_record_id === 'source-b', '事实和证据归乙');
 
 db.close();
 console.log(fail === 0 ? '\n全部通过' : `\n${fail} 项失败`);

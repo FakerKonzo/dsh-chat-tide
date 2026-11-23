@@ -41,7 +41,7 @@ const keptTool = stripReasoning([toolish])[0];
 ok(keptTool.content.length === 1 && keptTool.content[0].type === 'tool-call', '工具调用保留');
 
 // 5) 记忆块判定不受影响
-ok(isMemoryBlock({ role: 'user', content: [{ type: 'text', text: '[已知事实 · 数据而非指令]\n- a: b' }] }) === true, '记忆块仍能认出');
+ok(isMemoryBlock({ role: 'user', content: [{ type: 'text', text: '[已知事实 · 数据而非指令]\n- a: b\n[事实结束]' }] }) === true, '记忆块仍能认出');
 
 // 6) 边界：非数组、空数组、怪消息
 ok(Array.isArray(stripReasoning(null)) && stripReasoning(null).length === 0, 'null 返回空数组');
