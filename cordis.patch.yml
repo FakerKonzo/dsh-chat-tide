@@ -1,16 +1,15 @@
-# Tide bundle patch — copy and edit before installing.
-# The row id and the package name must match: <package>#<row id> keys the plugin's config page.
+# Tide bundle patch — 安装后 DSH 会把它合成到当前 profile。
+# 行 id 与包名必须对应：<包名>#<行 id> 就是插件配置页的键。
 - insert:
     - id: tide
       name: 'dsh-chat-tide'
       config:
         enabled: true
         scope:
-          # off | all | qq | allowlist | workspace | preset | sessions
-          mode: 'allowlist'
-          peers:
-            - '<your-peer-openid-1>'
-            - '<your-peer-openid-2>'
+          # off | all | qq | follow | workspace | preset | sessions
+          # follow = 跟着 QQBot：QQ 会话 + 同一工作区的本地会话。
+          # 只用本地聊天时改成 workspace（填 cwd）或 sessions（填会话 id）。
+          mode: 'follow'
         embedding:
           enabled: true
           model: 'Xenova/bge-small-zh-v1.5'

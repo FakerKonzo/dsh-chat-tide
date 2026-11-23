@@ -4,6 +4,13 @@
 
 _Work in progress. Published as part of the next release; see RELEASE.md for what triggers one._
 
+### Fixed
+
+- The bundled patch shipped `scope.mode: allowlist` with placeholder peers, so a fresh install
+  matched no session and looked broken. The default is `follow` now (QQBot sessions plus local
+  chats in the same workspace), and the placeholders are gone. The guides also stop telling people
+  to edit `dsh.profile.bundles` by hand: the plugin manager adds an installed bundle there itself.
+
 ### Changed
 
 - The README is a one-screen summary now: what the plugin is, the facts a reader (or an AI

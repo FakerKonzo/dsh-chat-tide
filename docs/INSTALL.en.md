@@ -4,13 +4,13 @@ Tide is a chat-memory plugin for DSH. This guide covers installing it, configuri
 
 - Package `dsh-chat-tide`, plugin row id `tide`
 - Data lives in `~/.dsh/tide/memory.db`; the embedding model in `~/.dsh/tide/models`
-- Settings are on the plugin page under “Tide” and take effect within five seconds — no restart
+- Use the Tide section of the plugin page to choose chats, change cross-chat memory settings, and browse memories.
 
 ## Install
 
-1. Install `dsh-chat-tide` in the DSH plugin manager.
-2. Make sure `dsh.profile.bundles` in the active profile’s `package.json` includes `dsh-chat-tide`; without it the plugin is installed but never loaded.
-3. Reload the plugin or restart the host.
+1. Open the DSH plugin manager, choose “Add plugin,” and install `dsh-chat-tide`.
+2. Select “Enable now” after installation. DSH adds Tide to the active profile automatically. Restart DSH if prompted.
+3. The bundled configuration uses the `follow` scope: it covers QQBot sessions plus local chats in the same workspace, with memory injection and group screening already on. For local chats only, set Scope to `workspace` (with a path) or `sessions` (with session ids).
 
 On first use it downloads a local embedding model of about 25–30 MB, used to match topics with memories. A failed download reports a clear error instead of silently retrying inside the host process.
 
@@ -27,6 +27,8 @@ Private chats are never screened for waking; if they are in scope, they still ge
 
 ## The five everyday switches
 
+The defaults below come from the bundled configuration.
+
 | Item | Key | Default |
 | --- | --- | --- |
 | Group screening | `features.routing` | on |
@@ -35,7 +37,7 @@ Private chats are never screened for waking; if they are in scope, they still ge
 | Keep private facts out of groups | `context.groupExcludePrivate` | on |
 | Store facts / events / attention | `extract.storeFacts`, `storeEvents`, `storeAttention` | on |
 
-These can also be written in the profile’s plugin configuration:
+To change group screening, memory in replies, or what gets saved, edit the plugin configuration and reload Tide. You can change “Unify sessions” and “Keep private facts out of groups” from Tide’s settings page. This example starts with a memory-only test.
 
 ```yaml
 scope:
