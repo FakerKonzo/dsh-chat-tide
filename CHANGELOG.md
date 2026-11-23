@@ -6,6 +6,21 @@ _Work in progress. Published as part of the next release; see RELEASE.md for wha
 
 ### Fixed
 
+- Editing a fact left the old value in the model request. Filtering messages in `agent/pre-step`
+  could not work: the host appends those messages and derives the request from the whole session
+  surface. Old memory nodes are now retired on the surface itself, each replaced by an empty
+  system message, so the previous value stops reaching the model while the log keeps it.
+- Repair extraction attributed every message of a round to the last speaker, because it joined the
+  messages and kept only the final sender and record id. Each message is now labelled and bound to
+  its own sender, and candidates that do not name a real label are dropped.
+
+## 0.5.2 — 2026-11-22
+
+Settings only: identity and persona lead the page, and the owner field left the injection-budget
+group where nobody would look for it.
+
+### Fixed
+
 - The owner field sat inside the injection-budget group, where nobody would look for it. Identity
   and persona now lead the page: they are what a new install needs to decide first.
 
