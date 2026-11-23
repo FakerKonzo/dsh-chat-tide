@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.6.2 — 2026-11-23
+
+Fixes only: conditional fields, the import preview, and backup cleanup.
+
+### Fixed
+
+- Conditional fields never actually hid: the condition sat inside an options object that the page
+  read as if it were the condition tuple, so it passed for every value. The field shape is now
+  explicit — `[key, label, type, options, when, opts]` — and a field can depend on more than one
+  switch. Turning off memory lookup now also hides cross-chat memory and the private-chat filter,
+  instead of leaving them visible but inert.
+- The import preview listed only the first eight changes while applying all of them, and showed
+  rule changes as a count. There is a "show every change" toggle now, including each rule's
+  content and the scope it applies to.
+- A backup download that the client aborted left a complete copy of the database on disk: the
+  read stream was never destroyed and only the file was removed. Downloads now go through
+  `pipeline` and the whole temporary directory is removed on completion, abort or transfer error.
+
 ## 0.6.1 — 2026-11-23
 
 Fixes only: the settings page rendered blank after loading.
