@@ -18,8 +18,9 @@ sessions fail to load), and host markers are kept out of stored memory.
   preparing…`, `[model changed: …]`, `Browser time zone…`, `<system-reminder>` blocks — leaked
   into the raw log when they were glued to a real message, then got extracted as facts and events.
   Ingest strips them now, and the repair pass skips them.
-- `scripts/repair-session-log.mjs`: repairs logs already damaged by the old behaviour by removing
-  the misplaced events and renumbering seqs with every reference fixed. Run it with DSH closed.
+- `scripts/repair-session-log.mjs` ships with the package to fix logs already damaged by older
+  versions: `--scan <sessions dir>` reports, adding `--write` removes the misplaced events and
+  renumbers seqs with every reference fixed. Run it with DSH closed.
 
 ## 0.6.3 — 2026-11-23
 

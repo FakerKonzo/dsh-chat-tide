@@ -10,7 +10,7 @@ Tide is a chat-memory plugin for DSH. This guide covers installing it, configuri
 
 1. Open the DSH plugin manager, choose “Add plugin,” and install `dsh-chat-tide`.
 2. Select “Enable now” after installation. DSH adds Tide to the active profile automatically. Restart DSH if prompted.
-3. The bundled configuration uses the `follow` scope: QQBot sessions plus local chats in the same workspace, with memory injection and group screening on. For local chats only, set Scope to `workspace` (with a path) or `sessions` (with session ids).
+3. The bundled configuration uses the `follow` scope: **QQ sessions only** (groups and private chats), with memory injection and group screening on. To include local sessions, switch Scope to `workspace` (a workspace path — every session there, QQ or local) or `sessions` (name specific sessions).
 
 On first use it downloads a local embedding model of about 25–30 MB. A failed download reports a clear error instead of silently retrying inside the host process.
 
@@ -54,6 +54,7 @@ Copying `memory.db` while DSH runs is not enough: recent writes may still be in 
 - **Group messages get no reply**: waking only happens with “Join group chats” on, and the assistant may choose to stay silent for the whole turn.
 - **An old value still shows up**: after editing a fact the previous value must not appear; check that the plugin is 0.5.3 or newer.
 - **Database state**: run `node scripts/doctor.mjs` inside the plugin directory.
+- **A session will not open, with `system/message does not match an open turn and step`**: the log was damaged by 0.6.3 or earlier. Quit DSH, then run `node scripts/repair-session-log.mjs --scan "%USERPROFILE%\.dsh\sessions" --write` (without `--write` it only reports).
 
 ## Data
 

@@ -53,7 +53,8 @@
     "@deepseek-ai/schemastery": ">=0.1.0"
   },
   "scripts": {
-    "test": "node scripts/run-checks.mjs --skip-model"
+    "test": "node scripts/run-checks.mjs --skip-model",
+    "repair-sessions": "node scripts/repair-session-log.mjs --scan"
   },
   "license": "MIT",
   "author": "FakerKonzo",
