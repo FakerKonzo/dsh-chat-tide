@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.6.4 — 2026-11-26
+
+Fixes only: memory-block retirement no longer writes events outside an open step (which made
+sessions fail to load), and host markers are kept out of stored memory.
+
+### Fixed
+
+- **A session could become unloadable.** To drop a stale memory block from the request, Tide
+  replaced it with an empty system message — but wrote that event during `agent/pre-step`, before
+  the host opens the step, and again after `turn/end`. The host requires `system/message` to fall
+  inside an open turn **and** step, so it later rejected the whole log with
+  `system/message does not match an open turn and step`. Retirement now happens on `step/start`
+  (a legal position, still before the request is built), and only for blocks whose text differs
+  from what this turn should show.
+- Host markers were stored as conversation. Lines the host injects — `Time sampled while
+  preparing…`, `[model changed: …]`, `Browser time zone…`, `<system-reminder>` blocks — leaked
+  into the raw log when they were glued to a real message, then got extracted as facts and events.
+  Ingest strips them now, and the repair pass skips them.
+- `scripts/repair-session-log.mjs`: repairs logs already damaged by the old behaviour by removing
+  the misplaced events and renumbering seqs with every reference fixed. Run it with DSH closed.
+
 ## 0.6.3 — 2026-11-23
 
 Fixes only: import updates rules in place, a stale preview can no longer be applied, and
