@@ -118,9 +118,10 @@ export/import/backup arrived. No database migration.
 - Clearing a number input stored 0, which silently zeroed a budget. Empty input is no longer
   coerced.
 
-## Unreleased
+## 0.6.5 — 2026-11-26
 
-_Work in progress. Published as part of the next release; see RELEASE.md for what triggers one._
+Fixes only: the session-log repair tool now remaps every seq reference and refuses to write when a
+reference would dangle.
 
 ### Fixed
 
