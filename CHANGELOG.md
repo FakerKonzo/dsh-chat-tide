@@ -20,7 +20,9 @@ sessions fail to load), and host markers are kept out of stored memory.
   Ingest strips them now, and the repair pass skips them.
 - `scripts/repair-session-log.mjs` ships with the package to fix logs already damaged by older
   versions: `--scan <sessions dir>` reports, adding `--write` removes the misplaced events and
-  renumbers seqs with every reference fixed. Run it with DSH closed.
+  renumbers seqs with every reference fixed. Run it with DSH closed. The output keeps the host
+  container layout — frame 0 holds only the header line — which is what a naive single-frame
+  rewrite got wrong and made logs unreadable even after the events were fixed.
 
 ## 0.6.3 — 2026-11-23
 

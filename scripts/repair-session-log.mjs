@@ -7,13 +7,14 @@
 //
 // 0.6.4 起不再这样写；这个脚本用来修旧版本留下的坏日志。
 //
+// 宿主的日志是「多帧 zstd 容器」：第一帧只装 header 一行（JSON + \n），
+// 其余每帧装一批事件行。修复后必须保持这个布局，不能压成单帧。
+//
 // 用法（务必在 DSH 关闭、这些会话都不在运行时执行）：
 //   node scripts/repair-session-log.mjs --scan <sessions 根目录>           只体检，列出坏会话
 //   node scripts/repair-session-log.mjs --scan <sessions 根目录> --write   体检并修复
 //   node scripts/repair-session-log.mjs "<单个 session.v4.jsonl.zstd>" --write
-//
-// 只做两件事：删掉非法事件，把 seq 重排成连续的 0..N-1，并修正所有对 seq 的引用。
-import { readFileSync, writeFileSync, renameSync, existsSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, writeFileSync, renameSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { zstdDecompressSync, zstdCompressSync } from 'node:zlib';
 
@@ -21,14 +22,37 @@ const args = process.argv.slice(2);
 const write = args.includes('--write');
 const scanIdx = args.indexOf('--scan');
 const scanRoot = scanIdx >= 0 ? args[scanIdx + 1] : null;
-const file = args.find((a, i) => !a.startsWith('--') && i !== scanIdx + 1);
+const skip = scanIdx >= 0 ? new Set([scanIdx + 1]) : new Set();
+const file = args.find((a, i) => !a.startsWith('--') && !skip.has(i));
 
 if (!scanRoot && (!file || !existsSync(file))) {
   console.error('用法: node scripts/repair-session-log.mjs <session.v4.jsonl.zstd>|--scan <root> [--write]');
   process.exit(2);
 }
 
-/** 复刻宿主规则：system/message 必须匹配一个开着的 turn+step。 */
+/** 多帧容器 → [headerLine, ...eventLines] */
+function readLog(path) {
+  const buf = readFileSync(path);
+  const magic = Buffer.from([0x28, 0xb5, 0x2f, 0xfd]);
+  const starts = [];
+  let i = 0;
+  while (true) {
+    const m = buf.indexOf(magic, i);
+    if (m < 0) break;
+    starts.push(m);
+    i = m + 1;
+  }
+  if (starts.length === 0 || starts[0] !== 0) throw new Error('不是 zstd 多帧容器（或帧没有从文件头开始）');
+  starts.push(buf.length);
+  const lines = [];
+  for (let k = 0; k < starts.length - 1; k++) {
+    const plain = zstdDecompressSync(buf.subarray(starts[k], starts[k + 1])).toString('utf8');
+    for (const l of plain.split('\n')) if (l.trim()) lines.push(l);
+  }
+  return { header: lines[0], events: lines.slice(1).map((l) => JSON.parse(l)) };
+}
+
+/** 按宿主规则找出非法事件下标：system/message 必须匹配一个开着的 turn+step。 */
 function findIllegal(list) {
   const bad = new Set();
   let openTurn = null;
@@ -49,17 +73,19 @@ function findIllegal(list) {
   return bad;
 }
 
-function readLog(path) {
-  const raw = zstdDecompressSync(readFileSync(path)).toString('utf8');
-  const lines = raw.split('\n').filter((l) => l.trim());
-  return { header: lines[0], events: lines.slice(1).map((l) => JSON.parse(l)) };
+/** 修好的内容 → 宿主格式的多帧缓冲：帧 0 只装 header 一行，帧 1 装全部事件行。 */
+function encodeContainer(headerLine, eventLines) {
+  const headerFrame = zstdCompressSync(Buffer.from(headerLine.endsWith('\n') ? headerLine : headerLine + '\n', 'utf8'));
+  const body = eventLines.length ? eventLines.join('\n') + '\n' : '';
+  const eventFrame = body ? zstdCompressSync(Buffer.from(body, 'utf8')) : Buffer.alloc(0);
+  return Buffer.concat([headerFrame, eventFrame]);
 }
 
 function repair(path, { dry }) {
   const { header, events } = readLog(path);
   const bad = findIllegal(events);
   const tag = path.split(/[\\/]/).slice(-2, -1)[0] ?? path;
-  if (bad.size === 0) return { path, bad: 0, changed: false };
+  if (bad.size === 0) return { path, tag, bad: 0, changed: false };
   console.log(`\n${tag}: ${events.length} 条事件，非法 system/message ${bad.size} 条`);
   if (dry) {
     for (const i of [...bad].slice(0, 5)) {
@@ -67,7 +93,7 @@ function repair(path, { dry }) {
       console.log('  将删除 seq', e.seq, new Date(e.time).toLocaleString('zh-CN'));
     }
     if (bad.size > 5) console.log(`  …另有 ${bad.size - 5} 条`);
-    return { path, bad: bad.size, changed: false };
+    return { path, tag, bad: bad.size, changed: false };
   }
   const kept = events.filter((_, i) => !bad.has(i));
   const map = new Map();
@@ -94,14 +120,15 @@ function repair(path, { dry }) {
   });
   if (findIllegal(out.map((l) => JSON.parse(l))).size !== 0) {
     console.error(`  ${tag}: 修复后仍有非法事件，已放弃写入`);
-    return { path, bad: bad.size, changed: false, failed: true };
+    return { path, tag, bad: bad.size, changed: false, failed: true };
   }
+  // 宿主格式：多帧。第一帧只装 header 一行，其余装事件行。
   const body = [header, ...out].join('\n') + '\n';
   const tmp = `${path}.repaired-${Date.now()}`;
-  writeFileSync(tmp, zstdCompressSync(Buffer.from(body, 'utf8')));
+  writeFileSync(tmp, encodeContainer(header, out));
   renameSync(tmp, path);
   console.log(`  已修复：${events.length} → ${out.length} 条事件，seq 连续 0..${out.length - 1}`);
-  return { path, bad: bad.size, changed: true };
+  return { path, tag, bad: bad.size, changed: true };
 }
 
 function walk(dir, out) {
@@ -122,7 +149,13 @@ if (scanRoot) {
   console.log(`扫描 ${files.length} 个会话日志${write ? '（修复模式）' : '（只体检，加 --write 才修）'}`);
   let broken = 0;
   for (const f of files) {
-    const r = repair(f, { dry: !write });
+    let r;
+    try {
+      r = repair(f, { dry: !write });
+    } catch (err) {
+      console.log(`\n${f.slice(-60)}: 读取失败 ${String(err?.message ?? err)}`);
+      continue;
+    }
     if (r.bad) broken += 1;
   }
   console.log(`\n共 ${broken} 个会话需要修复${write ? '，已处理' : '；加 --write 执行修复'}`);
