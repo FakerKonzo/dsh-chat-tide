@@ -81,6 +81,33 @@ function encodeContainer(headerLine, eventLines) {
   return Buffer.concat([headerFrame, eventFrame]);
 }
 
+/** 修复后的结构校验：非法 system/message、悬空/指错类型的引用、seq 连续性。 */
+function verifyRepaired(list) {
+  const problems = [];
+  if (findIllegal(list).size) problems.push('仍有非法 system/message');
+  const bySeq = new Map(list.map((e) => [e.seq, e]));
+  for (let i = 0; i < list.length; i++) {
+    if (list[i].seq !== i) {
+      problems.push(`seq 不连续：第 ${i} 条是 ${list[i].seq}`);
+      break;
+    }
+  }
+  const need = (v, wantType, where) => {
+    const t = bySeq.get(v);
+    if (!t) problems.push(`${where} 指向不存在的 ${v}`);
+    else if (wantType && t.type !== wantType) problems.push(`${where} 指向 ${t.type}，应为 ${wantType}`);
+  };
+  for (const e of list) {
+    if (e.type === 'developer/message' && e.data?.headerSeq !== undefined) {
+      if (e.data.headerSeq >= e.seq) problems.push(`seq ${e.seq} headerSeq 不在它之前`);
+      need(e.data.headerSeq, 'request/header', `seq ${e.seq} headerSeq`);
+    }
+    if (Array.isArray(e.data?.messageSeqs)) for (const q of e.data.messageSeqs) need(q, 'user/message', `seq ${e.seq} messageSeqs`);
+    for (const q of e.sourceEventSeqs ?? []) need(q, null, `seq ${e.seq} sourceEventSeqs`);
+  }
+  return problems;
+}
+
 function repair(path, { dry }) {
   const { header, events } = readLog(path);
   const bad = findIllegal(events);
@@ -103,23 +130,54 @@ function repair(path, { dry }) {
     map.set(events[i].seq, n);
     n += 1;
   }
-  const remap = (v) => (map.has(v) ? map.get(v) : undefined);
+  // 所有指向 SessionSeq 的字段都必须重映射。漏一个（例如 developer/message.headerSeq）
+  // 就会把引用指到别的条上，宿主照样打不开会话。任何引用落到被删的事件上，一律放弃写入。
+  const dangling = [];
+  const remapOne = (v, where) => {
+    if (v === undefined || v === null) return v;
+    if (!map.has(v)) {
+      dangling.push(`${where}=${v}`);
+      return v;
+    }
+    return map.get(v);
+  };
+  const remapList = (arr, where) => {
+    if (!Array.isArray(arr)) return arr;
+    return arr.map((v, i) => remapOne(v, `${where}[${i}]`));
+  };
+
   const out = kept.map((e) => {
     const c = JSON.parse(JSON.stringify(e));
     c.seq = map.get(e.seq);
     if (c.surfaceOp && c.surfaceOp.op === 'replace') {
-      c.surfaceOp.startSeq = remap(c.surfaceOp.startSeq);
-      c.surfaceOp.endSeq = remap(c.surfaceOp.endSeq);
+      c.surfaceOp.startSeq = remapOne(c.surfaceOp.startSeq, `${e.seq}.surfaceOp.startSeq`);
+      c.surfaceOp.endSeq = remapOne(c.surfaceOp.endSeq, `${e.seq}.surfaceOp.endSeq`);
     }
-    if (Array.isArray(c.sourceEventSeqs)) c.sourceEventSeqs = c.sourceEventSeqs.map(remap).filter((v) => v !== undefined);
-    if (c.data) {
-      if (Array.isArray(c.data.messageSeqs)) c.data.messageSeqs = c.data.messageSeqs.map(remap).filter((v) => v !== undefined);
-      if (c.data.through !== undefined) c.data.through = remap(c.data.through) ?? c.data.through;
+    if (Array.isArray(c.sourceEventSeqs)) c.sourceEventSeqs = remapList(c.sourceEventSeqs, `${e.seq}.sourceEventSeqs`);
+    const d = c.data;
+    if (d && typeof d === 'object') {
+      if (d.headerSeq !== undefined) d.headerSeq = remapOne(d.headerSeq, `${e.seq}.headerSeq`);
+      if (d.sourceEventSeq !== undefined) d.sourceEventSeq = remapOne(d.sourceEventSeq, `${e.seq}.sourceEventSeq`);
+      if (d.throughSeq !== undefined) d.throughSeq = remapOne(d.throughSeq, `${e.seq}.throughSeq`);
+      if (Array.isArray(d.messageSeqs)) d.messageSeqs = remapList(d.messageSeqs, `${e.seq}.messageSeqs`);
+      if (Array.isArray(d.shadowedSeqs)) d.shadowedSeqs = remapList(d.shadowedSeqs, `${e.seq}.shadowedSeqs`);
+      if (d.shadowedRange && typeof d.shadowedRange === 'object') {
+        d.shadowedRange.start = remapOne(d.shadowedRange.start, `${e.seq}.shadowedRange.start`);
+        d.shadowedRange.end = remapOne(d.shadowedRange.end, `${e.seq}.shadowedRange.end`);
+      }
     }
     return JSON.stringify(c);
   });
-  if (findIllegal(out.map((l) => JSON.parse(l))).size !== 0) {
-    console.error(`  ${tag}: 修复后仍有非法事件，已放弃写入`);
+
+  if (dangling.length) {
+    console.error(`  ${tag}: 有引用指向已被删除的事件，放弃写入：${dangling.slice(0, 5).join(', ')}`);
+    return { path, tag, bad: bad.size, changed: false, failed: true };
+  }
+
+  const repaired = out.map((l) => JSON.parse(l));
+  const problems = verifyRepaired(repaired);
+  if (problems.length) {
+    console.error(`  ${tag}: 修复后校验不过，已放弃写入：${problems.slice(0, 3).join('; ')}`);
     return { path, tag, bad: bad.size, changed: false, failed: true };
   }
   // 宿主格式：多帧。第一帧只装 header 一行，其余装事件行。

@@ -7,6 +7,12 @@ sessions fail to load), and host markers are kept out of stored memory.
 
 ### Fixed
 
+- The repair tool now remaps **every** seq reference, not a guessed subset: `surfaceOp`,
+  `sourceEventSeqs`, `developer/message.headerSeq`, `command/done.sourceEventSeq`, `messageSeqs`,
+  `shadowedSeqs`/`shadowedRange` and `throughSeq`. Missing `headerSeq` shifted a developer
+  message onto the wrong header and the session still would not load. If any reference points at
+  an event being removed, the tool now refuses to write rather than silently re-pointing it, and
+  it re-validates the result before replacing the file.
 - **A session could become unloadable.** To drop a stale memory block from the request, Tide
   replaced it with an empty system message — but wrote that event during `agent/pre-step`, before
   the host opens the step, and again after `turn/end`. The host requires `system/message` to fall
