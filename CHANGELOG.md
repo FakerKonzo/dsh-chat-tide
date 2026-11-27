@@ -4,128 +4,19 @@
 
 _Work in progress. Published as part of the next release; see RELEASE.md for what triggers one._
 
-### Changed
-
-- The optional chat preset is `tide-chat`, shown as “Tide 聊天”. It is registered by the plugin rather
-  than hand-written into the profile patch.
-
-## 0.6.4 — 2026-11-26
-
-Fixes only: memory-block retirement no longer writes events outside an open step (which made
-sessions fail to load), and host markers are kept out of stored memory.
-
 ### Fixed
 
-- The repair tool now remaps **every** seq reference, not a guessed subset: `surfaceOp`,
-  `sourceEventSeqs`, `developer/message.headerSeq`, `command/done.sourceEventSeq`, `messageSeqs`,
-  `shadowedSeqs`/`shadowedRange` and `throughSeq`. Missing `headerSeq` shifted a developer
-  message onto the wrong header and the session still would not load. If any reference points at
-  an event being removed, the tool now refuses to write rather than silently re-pointing it, and
-  it re-validates the result before replacing the file.
-- **A session could become unloadable.** To drop a stale memory block from the request, Tide
-  replaced it with an empty system message — but wrote that event during `agent/pre-step`, before
-  the host opens the step, and again after `turn/end`. The host requires `system/message` to fall
-  inside an open turn **and** step, so it later rejected the whole log with
-  `system/message does not match an open turn and step`. Retirement now happens on `step/start`
-  (a legal position, still before the request is built), and only for blocks whose text differs
-  from what this turn should show.
-- Host markers were stored as conversation. Lines the host injects — `Time sampled while
-  preparing…`, `[model changed: …]`, `Browser time zone…`, `<system-reminder>` blocks — leaked
-  into the raw log when they were glued to a real message, then got extracted as facts and events.
-  Ingest strips them now, and the repair pass skips them.
-- `scripts/repair-session-log.mjs` ships with the package to fix logs already damaged by older
-  versions: `--scan <sessions dir>` reports, adding `--write` removes the misplaced events and
-  renumbers seqs with every reference fixed. Run it with DSH closed. The output keeps the host
-  container layout — frame 0 holds only the header line — which is what a naive single-frame
-  rewrite got wrong and made logs unreadable even after the events were fixed.
-
-## 0.6.3 — 2026-11-23
-
-Fixes only: import updates rules in place, a stale preview can no longer be applied, and
-the two client probes no longer depend on a Windows path.
-
-### Fixed
-
-- Importing a rule that already exists now updates that rule in place: the fact id, attribution and
-  evidence tier stay, and only the value and scope change. Previously the import could only add or
-  overwrite blindly, so a group-only rule could come back as a global one.
-- The import preview could still be applied after the input changed: a stale response could win a
-  race against a newer paste. Responses now carry the input version and are dropped when it moved.
-- Two client probes read the module from a hard-coded Windows path, so CI failed on Linux before any
-  assertion ran. They now resolve the module relative to their own location.
-
-- Imported rules lost their scope: the plan dropped `appliesTo`, so a rule meant for groups was
-  stored as a global rule and reached private chats too. The scope now travels with the plan and
-  is asserted after import.
-- The import preview could still hide changes: the "show every change" toggle only appeared when
-  more than eight *settings* changed, so ten changed rules still listed eight, and each rule body
-  was cut at 80 characters. The toggle now counts rules too, and bodies are shown in full.
-- Editing the pasted JSON kept the previous preview, so confirming imported what was previewed
-  earlier rather than what was on screen. Editing clears the preview; you must preview again.
-- A failed backup verification left the copy behind and the read-only connection open. Both are
-  cleaned up now, alongside the existing abort and error paths.
-- Collapsing "More" threw `setOpen is not defined`: the helper was used but never declared.
-  A regression check now asserts it exists.
-
-## 0.6.2 — 2026-11-23
-
-Fixes only: conditional fields, the import preview, and backup cleanup.
-
-### Fixed
-
-- Conditional fields never actually hid: the condition sat inside an options object that the page
-  read as if it were the condition tuple, so it passed for every value. The field shape is now
-  explicit — `[key, label, type, options, when, opts]` — and a field can depend on more than one
-  switch. Turning off memory lookup now also hides cross-chat memory and the private-chat filter,
-  instead of leaving them visible but inert.
-- The import preview listed only the first eight changes while applying all of them, and showed
-  rule changes as a count. There is a "show every change" toggle now, including each rule's
-  content and the scope it applies to.
-- A backup download that the client aborted left a complete copy of the database on disk: the
-  read stream was never destroyed and only the file was removed. Downloads now go through
-  `pipeline` and the whole temporary directory is removed on completion, abort or transfer error.
-
-## 0.6.1 — 2026-11-23
-
-Fixes only: the settings page rendered blank after loading.
-
-### Fixed
-
-- The settings page came up blank after loading. Its initial state lacked the collapse and
-  advanced-shown fields, so the first group render read a property of undefined. A render probe
-  now drives the loaded state as well as the loading state.
-
-## 0.6.0 — 2026-11-23
-
-Minor version: the settings page is reorganised, automatic remembering gained a master switch, and
-export/import/backup arrived. No database migration.
-
-### Added
-
-- Export, import and backup, on the settings page. Export writes settings, persona and rules to
-  one JSON file; import previews the differences first and only touches settings and rules.
-  Backup takes a consistent snapshot (writes still in the WAL included), reopens it read-only to
-  verify integrity and row counts, then hands over the file.
-- `extract.enabled`: one switch for automatic remembering. Turning it off stops normal extraction
-  **and** the repair pass, which used to keep writing behind the user's back; raw chat logs stay.
-
-### Changed
-
-- The settings page is now four blocks: Everyday, Your bot, More, Advanced. Everyday holds the
-  five things a user actually changes; tuning knobs sit behind "Show advanced settings" and
-  deployment-only switches (preset registration, subagents, grey-zone model fallback) are off the
-  page. Field labels were rewritten in plain language, and dependent fields appear only when the
-  switch they depend on is on.
-- Identity and persona are saved as text again. The value check keyed on a hand-maintained list of
-  string fields, so every new text field (owner openids, persona mode, persona text) failed with
-  `not-a-number`. The type now comes from the field declaration itself.
-- Controlled fields reject values outside their declared options, and time fields are validated
-  instead of being stored as free text.
-
-### Fixed
-
-- Clearing a number input stored 0, which silently zeroed a budget. Empty input is no longer
-  coerced.
+- Turning off “look up memories before answering” or “join a group chat on demand” in the settings
+  page now takes effect on the next turn. Both gates were read once at startup, so the switches
+  moved but nothing changed. Switching memory lookup off also retires the block still sitting in
+  the session.
+- `features.egressGate: false` is honoured: with the gate off the stream is no longer wrapped, so
+  text blocks are not held until the end of the stream.
+- Duplicate identical memory blocks no longer grow: one copy is reused and any additional copies
+  are retired, instead of one more being appended every turn.
+- The repair tool also remaps `image/offload` targets and interval references such as
+  `[[start, end]]`; it refuses to write when an interval endpoint points at a removed event, and a
+  batch run now reports successful and failed sessions separately instead of calling both done.
 
 ## 0.6.5 — 2026-11-26
 

@@ -103,6 +103,19 @@ function verifyRepaired(list) {
       need(e.data.headerSeq, 'request/header', `seq ${e.seq} headerSeq`);
     }
     if (Array.isArray(e.data?.messageSeqs)) for (const q of e.data.messageSeqs) need(q, 'user/message', `seq ${e.seq} messageSeqs`);
+    if (Array.isArray(e.data?.targets)) {
+      for (const t of e.data.targets) {
+        if (t?.seq === undefined) continue;
+        const target = bySeq.get(t.seq);
+        if (!target) problems.push(`seq ${e.seq} targets 指向不存在的 ${t.seq}`);
+        // 图片重定位必须仍落在一条带图片的 user 消息上
+        else {
+          const blocks = target.type === 'user/message' ? target.data?.content ?? [] : [];
+          const hasImage = blocks.some((b) => b?.type === 'image');
+          if (!hasImage) problems.push(`seq ${e.seq} targets 指向 ${target.type} 且没有图片`);
+        }
+      }
+    }
     for (const q of e.sourceEventSeqs ?? []) need(q, null, `seq ${e.seq} sourceEventSeqs`);
   }
   return problems;
@@ -135,6 +148,14 @@ function repair(path, { dry }) {
   const dangling = [];
   const remapOne = (v, where) => {
     if (v === undefined || v === null) return v;
+    // 区间引用：[[start, end]] 表示 start..end 连续一段，每个端点都要重排
+    if (Array.isArray(v)) {
+      if (v.length !== 2 || !Number.isInteger(v[0]) || !Number.isInteger(v[1]) || v[1] < v[0]) {
+        dangling.push(`${where} 不是合法区间：${JSON.stringify(v)}`);
+        return v;
+      }
+      return [remapOne(v[0], `${where}[0]`), remapOne(v[1], `${where}[1]`)];
+    }
     if (!map.has(v)) {
       dangling.push(`${where}=${v}`);
       return v;
@@ -161,6 +182,14 @@ function repair(path, { dry }) {
       if (d.throughSeq !== undefined) d.throughSeq = remapOne(d.throughSeq, `${e.seq}.throughSeq`);
       if (Array.isArray(d.messageSeqs)) d.messageSeqs = remapList(d.messageSeqs, `${e.seq}.messageSeqs`);
       if (Array.isArray(d.shadowedSeqs)) d.shadowedSeqs = remapList(d.shadowedSeqs, `${e.seq}.shadowedSeqs`);
+      if (Array.isArray(d.targets)) {
+        d.targets = d.targets.map((t, i) => {
+          if (t && typeof t === 'object' && t.seq !== undefined) {
+            t.seq = remapOne(t.seq, `${e.seq}.targets[${i}].seq`);
+          }
+          return t;
+        });
+      }
       if (d.shadowedRange && typeof d.shadowedRange === 'object') {
         d.shadowedRange.start = remapOne(d.shadowedRange.start, `${e.seq}.shadowedRange.start`);
         d.shadowedRange.end = remapOne(d.shadowedRange.end, `${e.seq}.shadowedRange.end`);
@@ -206,18 +235,29 @@ if (scanRoot) {
   walk(scanRoot, files);
   console.log(`扫描 ${files.length} 个会话日志${write ? '（修复模式）' : '（只体检，加 --write 才修）'}`);
   let broken = 0;
+  let fixed = 0;
+  const failed = [];
   for (const f of files) {
     let r;
     try {
       r = repair(f, { dry: !write });
     } catch (err) {
       console.log(`\n${f.slice(-60)}: 读取失败 ${String(err?.message ?? err)}`);
+      failed.push(f);
       continue;
     }
-    if (r.bad) broken += 1;
+    if (!r.bad) continue;
+    broken += 1;
+    if (r.failed) failed.push(f);
+    else if (r.changed) fixed += 1;
   }
-  console.log(`\n共 ${broken} 个会话需要修复${write ? '，已处理' : '；加 --write 执行修复'}`);
-  process.exit(0);
+  if (!write) {
+    console.log(`\n共 ${broken} 个会话需要修复；加 --write 执行修复`);
+  } else {
+    console.log(`\n共 ${broken} 个会话需要修复：成功 ${fixed}，失败 ${failed.length}`);
+    for (const f of failed) console.log('  失败：' + f);
+  }
+  process.exit(failed.length ? 1 : 0);
 }
 
 const r = repair(file, { dry: !write });
