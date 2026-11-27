@@ -6,6 +6,16 @@ _Work in progress. Published as part of the next release; see RELEASE.md for wha
 
 ### Fixed
 
+- Turning the scope **off** no longer makes the settings page unreachable: `/tide` and
+  `/tide/api/*` are still registered (with a read-only owner view) so the scope can be changed back.
+- Local console hardening: IPv6 `Host: [::1]:port` is accepted, request bodies have a 1 MiB cap
+  that answers 413 instead of crashing, cross-site POSTs are refused via the `Origin` header, and
+  JSON endpoints require `Content-Type: application/json`.
+- The embedding child process is disposed when the plugin unloads, rebuilt after a crash instead of
+  staying fatal forever, and the embed circuit breaker is actually wired (success/failure recorded).
+- Group routing now filters memories by the same scope rules as injection: with
+  `groupExcludePrivate` on, a private-chat memory no longer wakes the group. Private events logged
+  as `c2c` are normalised to `private` so both layers agree.
 - Turning off “look up memories before answering” or “join a group chat on demand” in the settings
   page now takes effect on the next turn. Both gates were read once at startup, so the switches
   moved but nothing changed. Switching memory lookup off also retires the block still sitting in
