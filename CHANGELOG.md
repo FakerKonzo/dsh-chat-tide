@@ -1,8 +1,6 @@
 # Changelog
 
-## Unreleased
-
-_Work in progress. Published as part of the next release; see RELEASE.md for what triggers one._
+## 0.6.6 — 2026-11-27
 
 ### Fixed
 
