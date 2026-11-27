@@ -97,26 +97,55 @@ function verifyRepaired(list) {
     if (!t) problems.push(`${where} 指向不存在的 ${v}`);
     else if (wantType && t.type !== wantType) problems.push(`${where} 指向 ${t.type}，应为 ${wantType}`);
   };
+  // 引用可能是单个编号，也可能是区间 [[a,b]]；区间要逐个编号检查。
+  const needRef = (v, wantType, where) => {
+    if (Array.isArray(v)) {
+      if (v.length !== 2) {
+        problems.push(`${where} 区间格式不对：${JSON.stringify(v)}`);
+        return;
+      }
+      for (let k = v[0]; k <= v[1]; k++) need(k, wantType, where);
+      return;
+    }
+    need(v, wantType, where);
+  };
+  // 图片重定位：user/message 或 tool/result 都可能带图；逐张核对 imageIndexes。
+  const contentOf = (ev) =>
+    ev.type === 'user/message'
+      ? ev.data?.content ?? []
+      : ev.type === 'tool/result'
+        ? ev.data?.message?.content ?? []
+        : null;
   for (const e of list) {
     if (e.type === 'developer/message' && e.data?.headerSeq !== undefined) {
       if (e.data.headerSeq >= e.seq) problems.push(`seq ${e.seq} headerSeq 不在它之前`);
       need(e.data.headerSeq, 'request/header', `seq ${e.seq} headerSeq`);
     }
-    if (Array.isArray(e.data?.messageSeqs)) for (const q of e.data.messageSeqs) need(q, 'user/message', `seq ${e.seq} messageSeqs`);
+    if (Array.isArray(e.data?.messageSeqs)) for (const q of e.data.messageSeqs) needRef(q, 'user/message', `seq ${e.seq} messageSeqs`);
     if (Array.isArray(e.data?.targets)) {
       for (const t of e.data.targets) {
         if (t?.seq === undefined) continue;
         const target = bySeq.get(t.seq);
-        if (!target) problems.push(`seq ${e.seq} targets 指向不存在的 ${t.seq}`);
-        // 图片重定位必须仍落在一条带图片的 user 消息上
-        else {
-          const blocks = target.type === 'user/message' ? target.data?.content ?? [] : [];
-          const hasImage = blocks.some((b) => b?.type === 'image');
-          if (!hasImage) problems.push(`seq ${e.seq} targets 指向 ${target.type} 且没有图片`);
+        if (!target) {
+          problems.push(`seq ${e.seq} targets 指向不存在的 ${t.seq}`);
+          continue;
+        }
+        const content = contentOf(target);
+        if (content === null) {
+          problems.push(`seq ${e.seq} targets 指向 ${target.type}，它不可能有图片`);
+          continue;
+        }
+        const idxs = Array.isArray(t.imageIndexes) ? t.imageIndexes : [];
+        if (idxs.length === 0) problems.push(`seq ${e.seq} targets 没有 imageIndexes`);
+        for (const ix of idxs) {
+          const block = content[ix];
+          if (!block || block.type !== 'image') {
+            problems.push(`seq ${e.seq} targets imageIndexes[${ix}] 不是图片（${block ? block.type : '越界'}）`);
+          }
         }
       }
     }
-    for (const q of e.sourceEventSeqs ?? []) need(q, null, `seq ${e.seq} sourceEventSeqs`);
+    for (const q of e.sourceEventSeqs ?? []) needRef(q, null, `seq ${e.seq} sourceEventSeqs`);
   }
   return problems;
 }
@@ -154,7 +183,14 @@ function repair(path, { dry }) {
         dangling.push(`${where} 不是合法区间：${JSON.stringify(v)}`);
         return v;
       }
-      return [remapOne(v[0], `${where}[0]`), remapOne(v[1], `${where}[1]`)];
+      // 区间内每一个编号都必须还在，少一个整个区间就失去意义
+      for (let k = v[0]; k <= v[1]; k++) {
+        if (!map.has(k)) {
+          dangling.push(`${where} 区间内 ${k} 已被删除`);
+          return v;
+        }
+      }
+      return [map.get(v[0]), map.get(v[1])];
     }
     if (!map.has(v)) {
       dangling.push(`${where}=${v}`);

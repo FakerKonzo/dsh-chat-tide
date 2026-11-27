@@ -1,37 +1,38 @@
-// 设置页的开关必须当场生效：关掉就不再用旧值
+// 设置开关：两个方向都生效（开→关 和 关→开）；关掉时不在 step 外写日志
+import { readFileSync } from 'node:fs';
+
 let fail = 0;
-const ok = (cond, label, extra = '') => {
-  console.log(`${cond ? 'PASS' : 'FAIL'}  ${label}${extra ? '  ' + extra : ''}`);
-  if (!cond) fail++;
+const ok = (c, l, e = '') => {
+  console.log(`${c ? 'PASS' : 'FAIL'}  ${l}${e ? '  ' + e : ''}`);
+  if (!c) fail++;
 };
 
-// 用文本检查而不是真的起插件：确认回调里读的是运行时设置，不是启动时的静态值
-import { readFileSync } from 'node:fs';
 const src = readFileSync(new URL('../lib/index.js', import.meta.url), 'utf8');
 
-// 1) contextInject：pre-step 回调里必须有运行时判断
-const injectBlock = src.slice(src.indexOf("ctx.on('agent/pre-step'"), src.indexOf('// step 已经开着'));
-ok(/const injectOn = effectiveCfg\(\)\.features\?\.contextInject !== false/.test(injectBlock), '注入：每轮读一次当前设置');
-ok(/retireMemoryNodes\(session, stale, turn, step/.test(injectBlock), '注入：关掉时把还生效的旧块退役');
-ok(/messageNodes|isMemoryBlock/.test(injectBlock) && /filter\(\(m\) => !isMemoryBlock\(m\)\)/.test(injectBlock), '注入：关掉时从本轮消息里剔除记忆块');
+// 1) 两组钩子始终注册（不再用启动时的 if 包住）——这样即使启动时是关的，运行时打开也能生效
+ok(!/if \(cfg\.features\.routing\) \{\s*ctx\.on\('agent\/pre-step'/.test(src), '路由钩子始终注册（不再被启动开关包住）');
+ok(!/if \(cfg\.features\.contextInject\) \{/.test(src), '注入钩子始终注册（不再被启动开关包住）');
+ok((src.match(/始终注册/g) || []).length >= 2, '两处都标注了「始终注册」');
 
-// 2) routing：回调内先判开关
-const routingBlock = src.slice(src.indexOf("// ── 路由：一级标签"), src.indexOf('// ── 路由：一级标签') + 1200);
-ok(/features\?\.routing === false\) return next\(\)/.test(routingBlock), '路由：每步先判开关，关掉直接放行');
+// 2) 路由回调内读运行时开关
+const routingIdx = src.indexOf("// ── 路由：一级标签");
+const routingBlock = src.slice(routingIdx, routingIdx + 900);
+ok(/features\?\.routing === false\) return next\(\)/.test(routingBlock), '路由：每步读当前设置，关掉直接放行');
 
-// 3) egressGate：关掉时不包装流
-ok(/features\?\.egressGate === false\) return iter/.test(src), '出站：开关关闭时不包装流（不攒文本块）');
+// 3) 注入回调内读运行时开关 + 关掉时剔除记忆块
+const injectIdx = src.indexOf("ctx.on('agent/pre-step'", src.indexOf('始终注册：开关在运行时读\n'));
+const injectBlock = src.slice(injectIdx, src.indexOf('// step 已经开着', injectIdx));
+ok(/const injectOn = effectiveCfg\(\)\.features\?\.contextInject !== false/.test(injectBlock), '注入：每轮读当前设置');
+ok(/offMessages\.filter\(\(m\) => !isMemoryBlock\(m\)\)/.test(injectBlock), '注入：关掉时本轮消息剔除记忆块');
 
-// 4) 静态兜底仍在：启动时挂不挂钩子这件事没被破坏
-ok(/if \(cfg\.features\.routing\)/.test(src) && /if \(cfg\.features\.contextInject\)/.test(src), '启动时的静态判断仍在（只在启动读一次也不影响运行时开关）');
+// 4) 关掉分支不能在 pre-step 里写 system/message（那会判会话损坏）
+const offBlockStart = injectBlock.indexOf('if (!injectOn)');
+const offBlock = injectBlock.slice(offBlockStart, offBlockStart + 900);
+ok(!/retireMemoryNodes\(/.test(offBlock), '关掉分支不在 pre-step 写退役事件');
+ok(/s2\.text = ''/.test(offBlock), '关掉分支只标记这一步清空，交由 step/start 处理');
 
-// 5) 关掉注入时，宿主送去模型的那份 messages 里不能再有记忆块
-//    这里只验代码路径：pre-step 在 injectOn=false 时把 isMemoryBlock 的条目过滤掉
-ok(
-  /const offMessages = offDecision\?\.messages \?\? \[\];/.test(src) &&
-    /offMessages\.filter\(\(m\) => !isMemoryBlock\(m\)\)/.test(src),
-  '注入：关掉后本轮消息里不含记忆块',
-);
+// 5) step/start 仍是唯一退役时机
+ok(/event\.type !== 'step\/start'/.test(src), '退役仍挂在 step/start');
 
 console.log(fail === 0 ? '\n全部通过' : `\n${fail} 项失败`);
 process.exit(fail === 0 ? 0 : 1);

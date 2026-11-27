@@ -31,6 +31,9 @@ ok(resolveSession({ id: 'qq-session', cwd: CWD }, { mode: 'workspace', cwd: CWD 
 ok(resolveSession({ id: 'local-1', cwd: '/other' }, { mode: 'workspace', cwd: CWD }) === null, '工作区：别的不命中');
 
 ok(resolveSession({ id: 'picked', cwd: '/x' }, { mode: 'sessions', sessionIds: ['picked'] })?.adapter === 'local', '会话：点名的纳入');
+// 名单只在「指定会话」模式生效：切到「仅 QQ」后，名单里的本地会话不能再被接管
+ok(resolveSession({ id: 'picked', cwd: '/x' }, { mode: 'qq', sessionIds: ['picked'] }) === null, '仅 QQ：名单里的本地会话不再生效');
+ok(resolveSession({ id: 'picked', cwd: '/x' }, { mode: 'follow', sessionIds: ['picked'] }) === null, '跟随：名单里的本地会话不再生效');
 ok(resolveSession({ id: 'other', cwd: '/x' }, { mode: 'sessions', sessionIds: ['picked'] }) === null, '会话：没点名的不纳入');
 ok(resolveSession({ id: 'qq-session' }, { mode: 'sessions', sessionIds: [] }) === null, '会话模式不再顺带纳入 QQ 会话');
 
