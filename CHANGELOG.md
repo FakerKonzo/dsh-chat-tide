@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+_Work in progress. Published as part of the next release; see RELEASE.md for what triggers one._
+
+### Changed
+
+- The optional chat preset is now `tide-chat-lite`, shown as “Tide 聊天（精简）”. The old id read
+  like the package name backwards and was easy to confuse with it.
+
 ## 0.6.4 — 2026-11-26
 
 Fixes only: memory-block retirement no longer writes events outside an open step (which made
