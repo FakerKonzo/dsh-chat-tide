@@ -11,7 +11,7 @@ const win = chatPresetDefinition({ platform: 'win32' });
 const linux = chatPresetDefinition({ platform: 'linux' });
 
 // 1) 基本形状
-ok(win.id === CHAT_PRESET_ID && CHAT_PRESET_ID === 'tide-persona', '预设 id 固定');
+ok(win.id === CHAT_PRESET_ID && CHAT_PRESET_ID === 'tide-chat', '预设 id 固定');
 ok(Array.isArray(win.plugins) && win.plugins.length > 6, '插件清单非空', String(win.plugins.length));
 ok(win.plugins.every((p) => typeof p.id === 'string' && typeof p.name === 'string'), '每行都有 id 和包名');
 
