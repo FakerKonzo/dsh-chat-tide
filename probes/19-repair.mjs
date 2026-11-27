@@ -56,6 +56,17 @@ const fact = db.prepare("SELECT user_id, source_record_id FROM fact WHERE canoni
 ok(grouped.events === 1 && event?.user_id === 'user-a' && event?.source_record_id === 'source-a', '经历归甲，缺少有效标签的候选不写入');
 ok(grouped.facts === 1 && fact?.user_id === 'user-b' && fact?.source_record_id === 'source-b', '事实和证据归乙');
 
+for (const storeFacts of [false, true]) {
+  const id = String(storeFacts);
+  appendRawLog(db, { ...groupMessage, correlationId: id, recordId: id, observedAt: now,
+    payload: '我住在杭州，今天去了西湖 ' + id });
+  let settings = {};
+  const result = await runRepairExtractions(db, { now, getExtractSettings: () => settings, complete: async () => {
+    settings = { storeFacts, storeEvents: !storeFacts };
+    return JSON.stringify({ facts: [{ canonicalKey: 'city', value: '杭州' }], events: [{ content: '去了西湖' }] });
+  } });
+  ok(result.facts === Number(storeFacts) && result.events === Number(!storeFacts), '补抽按模型返回时的开关分类保存 ' + id);
+}
 db.close();
 console.log(fail === 0 ? '\n全部通过' : `\n${fail} 项失败`);
 process.exit(fail === 0 ? 0 : 1);

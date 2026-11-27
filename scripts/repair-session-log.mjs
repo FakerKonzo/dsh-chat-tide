@@ -14,8 +14,11 @@
 //   node scripts/repair-session-log.mjs --scan <sessions 根目录>           只体检，列出坏会话
 //   node scripts/repair-session-log.mjs --scan <sessions 根目录> --write   体检并修复
 //   node scripts/repair-session-log.mjs "<单个 session.v4.jsonl.zstd>" --write
-import { readFileSync, writeFileSync, renameSync, existsSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFileSync, writeFileSync, renameSync, rmSync, existsSync, readdirSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { randomUUID } from 'node:crypto';
+import { createRequire } from 'node:module';
 import { zstdDecompressSync, zstdCompressSync } from 'node:zlib';
 
 const args = process.argv.slice(2);
@@ -33,22 +36,9 @@ if (!scanRoot && (!file || !existsSync(file))) {
 /** 多帧容器 → [headerLine, ...eventLines] */
 function readLog(path) {
   const buf = readFileSync(path);
-  const magic = Buffer.from([0x28, 0xb5, 0x2f, 0xfd]);
-  const starts = [];
-  let i = 0;
-  while (true) {
-    const m = buf.indexOf(magic, i);
-    if (m < 0) break;
-    starts.push(m);
-    i = m + 1;
-  }
-  if (starts.length === 0 || starts[0] !== 0) throw new Error('不是 zstd 多帧容器（或帧没有从文件头开始）');
-  starts.push(buf.length);
-  const lines = [];
-  for (let k = 0; k < starts.length - 1; k++) {
-    const plain = zstdDecompressSync(buf.subarray(starts[k], starts[k + 1])).toString('utf8');
-    for (const l of plain.split('\n')) if (l.trim()) lines.push(l);
-  }
+  const lines = zstdDecompressSync(buf).toString('utf8').split('\n').filter((line) => line.trim());
+  const meta = JSON.parse(lines[0]);
+  if (meta.type !== 'session' || meta.version !== 4) throw new Error('此工具仅支持 DSH V4 会话日志');
   return { header: lines[0], events: lines.slice(1).map((l) => JSON.parse(l)) };
 }
 
@@ -109,48 +99,36 @@ function verifyRepaired(list) {
     }
     need(v, wantType, where);
   };
-  // 图片重定位：user/message 或 tool/result 都可能带图；逐张核对 imageIndexes。
-  const contentOf = (ev) =>
-    ev.type === 'user/message'
-      ? ev.data?.content ?? []
-      : ev.type === 'tool/result'
-        ? ev.data?.message?.content ?? []
-        : null;
   for (const e of list) {
     if (e.type === 'developer/message' && e.data?.headerSeq !== undefined) {
       if (e.data.headerSeq >= e.seq) problems.push(`seq ${e.seq} headerSeq 不在它之前`);
       need(e.data.headerSeq, 'request/header', `seq ${e.seq} headerSeq`);
     }
     if (Array.isArray(e.data?.messageSeqs)) for (const q of e.data.messageSeqs) needRef(q, 'user/message', `seq ${e.seq} messageSeqs`);
-    if (Array.isArray(e.data?.targets)) {
-      for (const t of e.data.targets) {
-        if (t?.seq === undefined) continue;
-        const target = bySeq.get(t.seq);
-        if (!target) {
-          problems.push(`seq ${e.seq} targets 指向不存在的 ${t.seq}`);
-          continue;
-        }
-        const content = contentOf(target);
-        if (content === null) {
-          problems.push(`seq ${e.seq} targets 指向 ${target.type}，它不可能有图片`);
-          continue;
-        }
-        const idxs = Array.isArray(t.imageIndexes) ? t.imageIndexes : [];
-        if (idxs.length === 0) problems.push(`seq ${e.seq} targets 没有 imageIndexes`);
-        for (const ix of idxs) {
-          const block = content[ix];
-          if (!block || block.type !== 'image') {
-            problems.push(`seq ${e.seq} targets imageIndexes[${ix}] 不是图片（${block ? block.type : '越界'}）`);
-          }
-        }
-      }
-    }
     for (const q of e.sourceEventSeqs ?? []) needRef(q, null, `seq ${e.seq} sourceEventSeqs`);
   }
   return problems;
 }
 
-function repair(path, { dry }) {
+// 使用 DSH 的完整 V4 回放，同时检查消息投影（包括图片编号和已卸载状态）。
+async function replayCopy(path) {
+  const { header, events } = readLog(path);
+  const require = createRequire(import.meta.url);
+  let catalogPath;
+  try {
+    catalogPath = require.resolve('@deepseek-ai/dsh-session-format-catalog');
+  } catch {
+    if (!process.versions.electron) throw new Error('需要 DSH 会话校验器，详见 docs/INSTALL.md 的会话修复说明');
+    catalogPath = join(dirname(process.execPath), 'resources', 'app.asar', 'dsh', 'node_modules',
+      '@deepseek-ai', 'dsh-session-format-catalog', 'lib', 'index.js');
+  }
+  const { sessionFormatCatalog } = await import(pathToFileURL(catalogPath).href);
+  const restore = sessionFormatCatalog.createRestore(JSON.parse(header), { recovery: 'strict', validation: 'current' });
+  for (const event of events) restore.decodeRow(event);
+  restore.finish();
+}
+
+async function repair(path, { dry }) {
   const { header, events } = readLog(path);
   const bad = findIllegal(events);
   const tag = path.split(/[\\/]/).slice(-2, -1)[0] ?? path;
@@ -218,7 +196,7 @@ function repair(path, { dry }) {
       if (d.throughSeq !== undefined) d.throughSeq = remapOne(d.throughSeq, `${e.seq}.throughSeq`);
       if (Array.isArray(d.messageSeqs)) d.messageSeqs = remapList(d.messageSeqs, `${e.seq}.messageSeqs`);
       if (Array.isArray(d.shadowedSeqs)) d.shadowedSeqs = remapList(d.shadowedSeqs, `${e.seq}.shadowedSeqs`);
-      if (Array.isArray(d.targets)) {
+      if (e.type === 'image/offload' && Array.isArray(d.targets)) {
         d.targets = d.targets.map((t, i) => {
           if (t && typeof t === 'object' && t.seq !== undefined) {
             t.seq = remapOne(t.seq, `${e.seq}.targets[${i}].seq`);
@@ -246,10 +224,14 @@ function repair(path, { dry }) {
     return { path, tag, bad: bad.size, changed: false, failed: true };
   }
   // 宿主格式：多帧。第一帧只装 header 一行，其余装事件行。
-  const body = [header, ...out].join('\n') + '\n';
-  const tmp = `${path}.repaired-${Date.now()}`;
-  writeFileSync(tmp, encodeContainer(header, out));
-  renameSync(tmp, path);
+  const tmp = `${path}.repaired-${randomUUID()}`;
+  try {
+    writeFileSync(tmp, encodeContainer(header, out), { flag: 'wx' });
+    await replayCopy(tmp);
+    renameSync(tmp, path);
+  } finally {
+    rmSync(tmp, { force: true });
+  }
   console.log(`  已修复：${events.length} → ${out.length} 条事件，seq 连续 0..${out.length - 1}`);
   return { path, tag, bad: bad.size, changed: true };
 }
@@ -276,7 +258,7 @@ if (scanRoot) {
   for (const f of files) {
     let r;
     try {
-      r = repair(f, { dry: !write });
+      r = await repair(f, { dry: !write });
     } catch (err) {
       console.log(`\n${f.slice(-60)}: 读取失败 ${String(err?.message ?? err)}`);
       failed.push(f);
@@ -296,6 +278,6 @@ if (scanRoot) {
   process.exit(failed.length ? 1 : 0);
 }
 
-const r = repair(file, { dry: !write });
+const r = await repair(file, { dry: !write });
 if (r.bad === 0) console.log('无需修复。');
 process.exit(r.failed ? 1 : 0);

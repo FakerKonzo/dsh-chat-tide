@@ -1,4 +1,5 @@
 // 出站流：普通回复顺序不变；正文 + 拒答工具同一步时发出去的是零字；关掉 hold 就直通
+import { BlockAssembler } from '@deepseek-ai/dsh-llm';
 import { createEgress } from '../lib/egress.js';
 
 let fail = 0;
@@ -53,5 +54,28 @@ const eD = createEgress({ isBindable: () => false, cfg: { holdTextOnSilence: tru
 const inD = src(chunksB);
 ok(eD.wrapStream('other', inD, { gate: true }) === inD, 'D：非本插件会话不碰流');
 
+const nested = await collect(eB.wrapStream('nested', src([
+  { type: 'block-start', index: 0, blockType: 'text' },
+  { type: 'text-delta', index: 0, text: '过渡文字' },
+  { type: 'block-end', index: 0, block: { type: 'text', text: '过渡文字' } },
+  { type: 'block-start', index: 1, blockType: 'tool-call' },
+  { type: 'block-end', index: 1, block: { type: 'tool-call', id: 'call1', name: 'run_code', arguments: '{}' } },
+])));
+const assembler = new BlockAssembler();
+for (const chunk of nested) assembler.push(chunk);
+const blocks = assembler.blocks();
+ok(blocks.every((b) => b.type !== 'text' || b.text === ''), 'DSH 组装 run_code 消息时得到零字正文');
+ok(blocks.some((b) => b.name === 'run_code' && b.id === 'call1'), '嵌套工具仍可执行');
+let readPastProgress = false;
+async function* slowSource() {
+  yield { type: 'reasoning-delta', index: 0, text: '思考中' };
+  readPastProgress = true;
+  yield { type: 'text-delta', index: 1, text: '回复' };
+}
+const progress = eB.wrapStream('progress', slowSource());
+ok((await progress.next()).value.type === 'reasoning-delta' && !readPastProgress, '首段正文前的进度实时转发');
+await progress.return();
+const final = await collect(eB.wrapStream('nested', src(chunksA.slice(0, 3))));
+ok(final.at(-1).block.text === 'ab', '普通工具完成后下一步的最终回复正常');
 console.log(fail === 0 ? '\n全部通过' : `\n${fail} 项失败`);
 process.exit(fail === 0 ? 0 : 1);

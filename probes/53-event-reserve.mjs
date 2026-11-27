@@ -66,6 +66,17 @@ ok(filled.events.some((e) => e.eventId === 'there-1'), '近期不足时命中照
 const isolated = buildInjection({ db, binding, payload, cfg: { ...base, unifySessions: false }, prev: {} });
 ok(!isolated.events.some((e) => e.eventId === 'there-1'), '没开共享就不跨会话');
 
+for (let i = 0; i < 40; i++) {
+  appendEvent(db, { eventId: 'old-private-' + i, eventType: 'observation', content: '杭州出差',
+    scope: 'c2c', conversationKey: ELSEWHERE, occurredAt: NOW });
+}
+appendEvent(db, { eventId: 'other-group', eventType: 'observation', content: '我们群聊过杭州出差',
+  scope: 'group', conversationKey: 'qq:other-group', occurredAt: NOW });
+const filtered = buildInjection({ db, binding, payload: { messages: [{ content: [{ type: 'text', text: '杭州出差' }] }] },
+  cfg: { ...base, groupExcludePrivate: true } });
+ok(filtered.events.some((e) => e.eventId === 'other-group') && !filtered.events.some((e) => e.scope === 'c2c'),
+  '大量旧私聊记录不会挤掉允许引用的群聊经历');
+few.close();
 db.close();
 console.log(fail === 0 ? '\n全部通过' : `\n${fail} 项失败`);
 process.exit(fail === 0 ? 0 : 1);

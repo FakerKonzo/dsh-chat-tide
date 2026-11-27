@@ -75,6 +75,10 @@ ok(e2.ready === true, '新实例可用');
 const after = await e2.embed(['重建之后']);
 ok(after[0].length === 512, '重建后向量化成功');
 
+const pending = e2.embed(['卸载中的请求']);
 resetEmbedder();
+let rejected = false;
+try { await pending; } catch { rejected = true; }
+ok(rejected, '卸载使在途请求立即结束');
 console.log(fail === 0 ? '\n全部通过' : `\n${fail} 项失败`);
 process.exit(fail === 0 ? 0 : 1);

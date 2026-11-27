@@ -61,3 +61,9 @@ Copying `memory.db` while DSH runs is not enough: recent writes may still be in 
 Memories live in one SQLite file. Deleting a fact or an event leaves an audit row with the reason.
 
 Internal details are in [CONTRIBUTING.md](../CONTRIBUTING.md).
+
+### Silent replies and session repair
+
+With the silence gate enabled, Tide waits for each model step to finish before sending its text. If the step calls `run_code`, Tide forwards the tool call and drops that step's interim text. A later step can send the final reply.
+
+Session repair writes a temporary file and replays it through DSH's V4 session reader before replacing the original. Standalone use requires the matching `@deepseek-ai/dsh-session-format-catalog`, included in development installs. A missing reader or failed replay leaves the original in place.

@@ -16,7 +16,7 @@ const ok = (cond, label, extra = '') => {
   if (!cond) fail++;
 };
 
-const header = JSON.stringify({ type: 'session', version: 4, id: 'probe-repair', createdAt: 1, cwd: '/x' });
+const header = JSON.stringify({ type: 'session', version: 4, isSeeded: false, delegationDepth: 0, id: 'probe-repair', createdAt: 1, cwd: '/x' });
 const ev = [
   { seq: 0, type: 'turn/start', time: 1, data: { turn: 1 } },
   { seq: 1, type: 'step/start', time: 2, data: { turn: 1, step: 1 } },
@@ -24,13 +24,13 @@ const ev = [
   // 非法：step 已关，写 system/message
   { seq: 3, type: 'system/message', time: 4, data: { turn: 1, step: 1, message: { role: 'system', content: [] } } },
   { seq: 4, type: 'step/start', time: 5, data: { turn: 1, step: 2 } },
-  { seq: 5, type: 'request/header', time: 6, data: { header: { config: {}, tools: [] }, reason: 'start' } },
+  { seq: 5, type: 'request/header', time: 6, data: { header: { config: { provider: 'test', model: 'test' }, tools: [{ name: 'lookup', description: 'lookup', parameters: { type: 'object' } }] }, reason: 'initial' } },
   {
     seq: 6,
-    type: 'developer/message',
+    type: 'developer/message', surfaceOp: 'append',
     time: 7,
     // headerSeq 指向 seq5 的 request/header；删掉 seq3 后必须跟着减 1
-    data: { turn: 1, step: 2, message: { role: 'developer', content: [{ type: 'text', text: 'x' }] }, headerSeq: 5 },
+    data: { turn: 1, step: 2, message: { role: 'developer', id: 'd1', source: { kind: 'tool-update' }, content: [{ type: 'tool-addition', toolName: 'lookup' }] }, headerSeq: 5 },
   },
   { seq: 7, type: 'step/end', time: 8, data: { turn: 1, step: 2 } },
   { seq: 8, type: 'turn/end', time: 9, data: { turn: 1, reason: { kind: 'completed' } } },
@@ -90,7 +90,7 @@ const ev2 = [
   { seq: 4, type: 'step/start', time: 5, data: { turn: 1, step: 2 } },
   {
     seq: 5,
-    type: 'developer/message',
+    type: 'developer/message', surfaceOp: 'append',
     time: 6,
     // headerSeq 指向 seq3——正是要被删掉的那条
     data: { turn: 1, step: 2, message: { role: 'developer', content: [] }, headerSeq: 3 },

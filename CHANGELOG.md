@@ -6,6 +6,17 @@ _Work in progress. Published as part of the next release; see RELEASE.md for wha
 
 ### Fixed
 
+- Egress now streams the thinking/progress before the first text block and only holds from the first
+  text on; a step that calls `run_code` is treated as possibly silent. The shipped config enables
+  `egressGate`, so a silent step with text sends nothing.
+- The session-log repair tool validates every repaired file by replaying it through DSH's real V4
+  session reader before replacing the original, instead of hand-checking references; a failed replay
+  keeps the original.
+- Routing and injection share one SQL-level scope filter (`knnMemory`, `searchFacts`/`searchEvents`
+  scope args), so private memories cannot wake a group; the embedding model is now a per-plugin
+  manager that is disposed on unload and reloaded after a crash.
+- Local API: request bodies are capped and answered with 413, non-JSON POSTs get 415 (the client
+  self-check is exempt), and cross-site POSTs are refused; IPv6 `[::1]` hosts are accepted.
 - Turning the scope **off** no longer makes the settings page unreachable: `/tide` and
   `/tide/api/*` are still registered (with a read-only owner view) so the scope can be changed back.
 - Local console hardening: IPv6 `Host: [::1]:port` is accepted, request bodies have a 1 MiB cap

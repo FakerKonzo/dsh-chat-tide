@@ -204,5 +204,11 @@ ok(wr.status === 400, 'Resource：同源放行（→400 unknown action）', Stri
 wr = await resource(webReq({ host: '127.0.0.1:53322', origin: 'http://127.0.0.1:53322', body: 'x'.repeat(MAX_BODY_BYTES + 10) }));
 ok(wr.status === 413, 'Resource：超限表单 → 413', String(wr.status));
 
+for (const origin of ['http://127.0.0.1:53323', 'https://127.0.0.1:53322', 'http://localhost:53322']) {
+  const opts = { method: 'POST', host: '127.0.0.1:53322', origin };
+  ok((await callApi({ ...opts, contentType: 'application/json', body: '{}' })).statusCode === 403, 'API 拒绝不同源 ' + origin);
+  ok((await callPage({ ...opts, body: 'action=bogus' })).statusCode === 403, '表单拒绝不同源 ' + origin);
+  ok((await resource(webReq({ ...opts, body: 'action=bogus' }))).status === 403, 'Resource 拒绝不同源 ' + origin);
+}
 console.log(fail === 0 ? '\n全部通过' : `\n${fail} 项失败`);
 process.exit(fail === 0 ? 0 : 1);

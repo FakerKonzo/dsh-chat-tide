@@ -33,7 +33,7 @@ jobs:
       - name: Install dependencies
         run: npm install --no-audit --no-fund --ignore-scripts
 
-      # 模型相关的两个探针会下载约 30MB 权重，CI 里跳过；
+      # 需要真实向量模型的探针会下载约 30MB 权重，CI 里跳过；
       # 其余探针自带临时数据库，不读写用户数据。
       - name: Probes and consistency checks
         run: node scripts/run-checks.mjs --skip-model

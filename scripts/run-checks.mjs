@@ -9,7 +9,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const skipModel = process.argv.includes('--skip-model') || process.env.CM_SKIP_MODEL === '1';
 
 // 需要下载/加载向量模型的探针（CI 里默认跳过，避免依赖网络与 30MB 模型）
-const MODEL_PROBES = new Set(['03-embedding.mjs', '14-embed-worker.mjs']);
+const MODEL_PROBES = new Set(['03-embedding.mjs', '14-embed-worker.mjs', '42-embedder-restart.mjs']);
 
 const run = (file) => {
   const r = spawnSync(process.execPath, [file], { cwd: root, encoding: 'utf8', timeout: 300000 });

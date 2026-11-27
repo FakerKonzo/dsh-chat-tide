@@ -12,7 +12,7 @@ const ok = (c, l, e = '') => {
   console.log(`${c ? 'PASS' : 'FAIL'}  ${l}${e ? '  ' + e : ''}`);
   if (!c) fail++;
 };
-const header = JSON.stringify({ type: 'session', version: 4, id: 'probe77', createdAt: 1, cwd: '/x' });
+const header = JSON.stringify({ type: 'session', version: 4, isSeeded: false, delegationDepth: 0, id: 'probe77', createdAt: 1, cwd: '/x' });
 const script = fileURLToPath(new URL('../scripts/repair-session-log.mjs', import.meta.url));
 
 function writeLog(path, events) {
@@ -42,7 +42,7 @@ const run = (path) => {
     return { out: String(err.stdout || '') + String(err.stderr || ''), failed: true };
   }
 };
-const IMG = { type: 'image', source: { type: 'base64', media_type: 'image/png', data: 'x' } };
+const IMG = { type: 'image', attachment: { resourceId: 'image1', mimeType: 'image/png' } };
 
 // ── A：非法事件排在图前面，图片消息与 image/offload 的 seq 一起前移，imageIndexes 保留且仍指向图片 ──
 const a = join(CACHE, 'p77-a.zstd');
@@ -52,7 +52,7 @@ writeLog(a, [
   { seq: 1, type: 'step/start', time: 2, data: { turn: 1, step: 1 } },
   { seq: 2, type: 'step/end', time: 3, data: { turn: 1, step: 1 } },
   { seq: 3, type: 'system/message', time: 4, data: { turn: 1, step: 1, message: { role: 'system', content: [] } } }, // 非法
-  { seq: 4, type: 'user/message', time: 5, data: { role: 'user', content: [IMG, IMG] } },
+  { seq: 4, type: 'user/message', surfaceOp: 'append', time: 5, data: { role: 'user', id: 'u1', source: { kind: 'user' }, content: [{ type: 'text', text: 'before' }, IMG, { type: 'text', text: 'between' }, IMG] } },
   { seq: 5, type: 'image/offload', time: 6, data: { targets: [{ seq: 4, imageIndexes: [1] }] } },
   { seq: 6, type: 'turn/end', time: 7, data: { turn: 1, reason: { kind: 'completed' } } },
 ]);
@@ -72,12 +72,14 @@ writeLog(b, [
   { seq: 1, type: 'step/start', time: 2, data: { turn: 1, step: 1 } },
   { seq: 2, type: 'step/end', time: 3, data: { turn: 1, step: 1 } },
   { seq: 3, type: 'system/message', time: 4, data: { turn: 1, step: 1, message: { role: 'system', content: [] } } },
-  { seq: 4, type: 'user/message', time: 5, data: { role: 'user', content: [IMG] } },
+  { seq: 4, type: 'user/message', surfaceOp: 'append', time: 5, data: { role: 'user', id: 'u1', source: { kind: 'user' }, content: [IMG] } },
   { seq: 5, type: 'image/offload', time: 6, data: { targets: [{ seq: 4, imageIndexes: [1] }] } }, // 越界
   { seq: 6, type: 'turn/end', time: 7, data: { turn: 1, reason: { kind: 'completed' } } },
 ]);
+const original = readFileSync(b);
 const rb = run(b);
-ok(rb.failed, 'B：引用不存在的图片时拒绝写入');
+ok(rb.failed && /image index 1 does not exist/.test(rb.out), 'B：宿主回放拒绝越界图片');
+ok(original.equals(readFileSync(b)), 'B：回放失败时原件字节不变');
 rmSync(b, { force: true });
 
 // ── C：图片来自工具结果也允许 ──
@@ -88,9 +90,13 @@ writeLog(c, [
   { seq: 1, type: 'step/start', time: 2, data: { turn: 1, step: 1 } },
   { seq: 2, type: 'step/end', time: 3, data: { turn: 1, step: 1 } },
   { seq: 3, type: 'system/message', time: 4, data: { turn: 1, step: 1, message: { role: 'system', content: [] } } },
-  { seq: 4, type: 'tool/result', time: 5, data: { turn: 1, step: 1, message: { role: 'tool', content: [IMG] } } },
-  { seq: 5, type: 'image/offload', time: 6, data: { targets: [{ seq: 4, imageIndexes: [0] }] } },
-  { seq: 6, type: 'turn/end', time: 7, data: { turn: 1, reason: { kind: 'completed' } } },
+  { seq: 4, type: 'step/start', time: 5, data: { turn: 1, step: 2 } },
+  { seq: 5, type: 'assistant/message', surfaceOp: 'append', time: 6, data: { turn: 1, step: 2, stream: [], message: { id: 'a1', role: 'assistant', source: { kind: 'model', provider: 'test', model: 'test' }, content: [{ type: 'tool-call', name: 'image', id: 'call1', arguments: '{}' }] } } },
+  { seq: 6, type: 'tool/call', time: 7, data: { turn: 1, step: 2, callId: 'call1', name: 'image', arguments: '{}' } },
+  { seq: 7, type: 'tool/result', surfaceOp: 'append', time: 8, data: { turn: 1, step: 2, message: { id: 't1', role: 'tool', source: { kind: 'tool', callId: 'call1' }, toolCallId: 'call1', content: [IMG] } } },
+  { seq: 8, type: 'image/offload', time: 9, data: { targets: [{ seq: 7, imageIndexes: [0] }] } },
+  { seq: 9, type: 'step/end', time: 10, data: { turn: 1, step: 2 } },
+  { seq: 10, type: 'turn/end', time: 11, data: { turn: 1, reason: { kind: 'completed' } } },
 ]);
 const rc = run(c);
 ok(!rc.failed && /已修复/.test(rc.out), 'C：工具结果里的图片修复成功', rc.out.trim().split('\n').pop());
@@ -104,7 +110,7 @@ writeLog(d, [
   { seq: 1, type: 'step/start', time: 2, data: { turn: 1, step: 1 } },
   { seq: 2, type: 'step/end', time: 3, data: { turn: 1, step: 1 } },
   { seq: 3, type: 'system/message', time: 4, data: { turn: 1, step: 1, message: { role: 'system', content: [] } } },
-  { seq: 4, type: 'user/message', time: 5, data: { role: 'user', content: [{ type: 'text', text: 'hi' }] }, sourceEventSeqs: [[0, 2]] },
+  { seq: 4, type: 'user/message', surfaceOp: 'append', time: 5, data: { role: 'user', id: 'u1', source: { kind: 'user' }, content: [{ type: 'text', text: 'hi' }] }, sourceEventSeqs: [[0, 2]] },
   { seq: 5, type: 'turn/end', time: 6, data: { turn: 1, reason: { kind: 'completed' } } },
 ]);
 const rd = run(d);
@@ -125,7 +131,7 @@ writeLog(e2, [
   { seq: 2, type: 'step/end', time: 3, data: { turn: 1, step: 1 } },
   // 区间 [[2,4]] 覆盖 2、3、4；其中 3 是被删的非法 system/message
   { seq: 3, type: 'system/message', time: 4, data: { turn: 1, step: 1, message: { role: 'system', content: [] } } },
-  { seq: 4, type: 'user/message', time: 5, data: { role: 'user', content: [{ type: 'text', text: 'x' }] }, sourceEventSeqs: [[2, 4]] },
+  { seq: 4, type: 'user/message', surfaceOp: 'append', time: 5, data: { role: 'user', id: 'u1', source: { kind: 'user' }, content: [{ type: 'text', text: 'x' }] }, sourceEventSeqs: [[2, 4]] },
   { seq: 5, type: 'turn/end', time: 6, data: { turn: 1, reason: { kind: 'completed' } } },
 ]);
 const re = run(e2);

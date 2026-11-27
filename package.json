@@ -46,6 +46,11 @@
     "sqlite-vec": "^0.1.9",
     "@huggingface/transformers": "3.7.6"
   },
+  "devDependencies": {
+    "@deepseek-ai/dsh-llm": "0.2.2-rc.5",
+    "@deepseek-ai/dsh-session-format-catalog": "0.2.2-rc.5",
+    "@deepseek-ai/schemastery": "3.19.0"
+  },
   "peerDependencies": {
     "@deepseek-ai/cordis": ">=0.1.0",
     "@deepseek-ai/dsh-tools": ">=0.1.0",

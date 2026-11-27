@@ -228,5 +228,19 @@ const groupBinding = (peer, conversationKey) => ({ adapter: 'qq', scope: 'group'
   closeDb(db, file);
 }
 
+{
+  const { db, file } = mkDb('crowded');
+  for (let i = 0; i < 12; i++) {
+    putEvent(db, { id: 'private-' + i, content: '屋顶光伏', scope: 'private', cos: 1, conversationKey: 'qq:p' });
+  }
+  putEvent(db, { id: 'group', content: '去年我们讨论过屋顶光伏发电', scope: 'group', cos: 0.8, conversationKey: 'qq:g' });
+  for (const useVec of [true, false]) {
+    const result = await decideRoute({ db, cfg: makeCfg({}), binding: groupBinding('g', 'qq:g'), text: '屋顶光伏',
+      embedder, vecReady: useVec, random: () => 0 });
+    ok(result.action === 'wake' && (useVec ? result.detail.top1 > 0.79 : result.detail.ftsOverlap > 0),
+      '私聊占满前十二名时仍能召回群聊经历 ' + (useVec ? '向量' : '关键词'));
+  }
+  closeDb(db, file);
+}
 console.log(fail === 0 ? '\n全部通过' : `\n${fail} 项失败`);
 process.exit(fail ? 1 : 0);
