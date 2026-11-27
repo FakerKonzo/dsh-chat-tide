@@ -6,8 +6,8 @@ _Work in progress. Published as part of the next release; see RELEASE.md for wha
 
 ### Changed
 
-- The optional chat preset is now `tide-chat-lite`, shown as “Tide 聊天（精简）”. The old id read
-  like the package name backwards and was easy to confuse with it.
+- The optional chat preset is now `tide-persona`, shown as “Tide 人格”. The old id read like the
+  package name backwards and was easy to confuse with it.
 
 ## 0.6.4 — 2026-11-26
 
