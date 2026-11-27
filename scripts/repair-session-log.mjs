@@ -36,7 +36,24 @@ if (!scanRoot && (!file || !existsSync(file))) {
 /** 多帧容器 → [headerLine, ...eventLines] */
 function readLog(path) {
   const buf = readFileSync(path);
-  const lines = zstdDecompressSync(buf).toString('utf8').split('\n').filter((line) => line.trim());
+  // 按 zstd magic 切帧逐帧解压：Node 22 的 zstdDecompressSync 不接受拼接帧，逐帧才稳。
+  const magic = Buffer.from([0x28, 0xb5, 0x2f, 0xfd]);
+  const starts = [];
+  let i = 0;
+  while (true) {
+    const m = buf.indexOf(magic, i);
+    if (m < 0) break;
+    starts.push(m);
+    i = m + 1;
+  }
+  if (starts.length === 0 || starts[0] !== 0) throw new Error('不是 zstd 多帧容器（或帧没有从文件头开始）');
+  starts.push(buf.length);
+  const lines = [];
+  for (let k = 0; k < starts.length - 1; k++) {
+    for (const line of zstdDecompressSync(buf.subarray(starts[k], starts[k + 1])).toString('utf8').split('\n')) {
+      if (line.trim()) lines.push(line);
+    }
+  }
   const meta = JSON.parse(lines[0]);
   if (meta.type !== 'session' || meta.version !== 4) throw new Error('此工具仅支持 DSH V4 会话日志');
   return { header: lines[0], events: lines.slice(1).map((l) => JSON.parse(l)) };
