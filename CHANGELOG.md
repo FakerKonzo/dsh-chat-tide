@@ -6,15 +6,11 @@ _Work in progress. Published as part of the next release; see RELEASE.md for wha
 
 ### Fixed
 
-- The chat preset now exposes a single persistent pwsh tool instead of four terminal rows. On
-  Windows there is no reliable bash (the OPS Niubash payload is not installed) and the host pwsh
-  may resolve to the Store execution alias, which exits before readiness under ConPTY. The
-  remaining tool carries an explicit shell path.
-- The chat preset no longer points the terminal at the Microsoft Store pwsh execution alias.
-  Under the host's real ConPTY startup the alias exits before readiness
-  (`PTY shell exited during startup`). The preset now resolves a real PE first: the MSI layout
-  under `C:\Program Files\PowerShell\7`, then a zip copy under `~/.dsh/tide/pwsh7` (documented
-  in INSTALL.md for machines without admin rights).
+- The chat preset no longer mounts the host's own shell tools on Windows. There the host resolves
+  `pwsh` to the Microsoft Store execution alias, which exits before readiness under the real
+  ConPTY startup (`PTY shell exited during startup`), and nothing else was available. The preset now
+  leaves shells to dsh-ops: its bundled Niubash payload provides bash, and `ops_bash` runs through
+  it. Host bash rows stay on POSIX, where they work.
 
 ## 0.6.7 — 2026-11-28
 

@@ -40,9 +40,9 @@ ok(fsRow?.config?.read === true && fsRow?.config?.write === true && fsRow?.confi
 const shellWin = win.plugins.find((p) => p.id === 'persistent-shell').config;
 const shellLinux = linux.plugins.find((p) => p.id === 'persistent-shell').config;
 const dis = (list, id) => list.find((p) => p.id === id)?.disabled === true;
-ok(!shellWin.some((p) => /bash/.test(p.id)), 'Windows 不挂 bash（没有可靠的 bash 可用）');
-ok(!dis(shellWin, 'persistent-pwsh'), 'Windows 启用 pwsh（只留持久会话一条，少一份启动风险）');
-ok(!dis(shellLinux, 'terminal-bash') && dis(shellLinux, 'persistent-pwsh'), 'Linux 反过来');
+ok(dis(shellWin, 'terminal-bash') && dis(shellWin, 'persistent-bash'), 'Windows 不挂宿主 bash（走 dsh-ops 的 ops_bash）');
+ok(!shellWin.some((p) => /pwsh/.test(p.id)), 'Windows 不挂宿主 pwsh（Store 别名在 ConPTY 下起不来）');
+ok(!dis(shellLinux, 'terminal-bash') && !dis(shellLinux, 'persistent-bash'), 'Linux 用宿主 bash');
 
 // 7) 注册：服务缺失或抛错都要安静失败，不能把插件带崩
 let called = 0;
