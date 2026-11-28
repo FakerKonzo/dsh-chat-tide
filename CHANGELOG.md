@@ -1,9 +1,15 @@
 # Changelog
 
-## 0.6.8 — 2026-11-28
+## Unreleased
+
+_Work in progress. Published as part of the next release; see RELEASE.md for what triggers one._
 
 ### Fixed
 
+- The chat preset now exposes a single persistent pwsh tool instead of four terminal rows. On
+  Windows there is no reliable bash (the OPS Niubash payload is not installed) and the host pwsh
+  may resolve to the Store execution alias, which exits before readiness under ConPTY. The
+  remaining tool carries an explicit .
 - The chat preset no longer points the terminal at the Microsoft Store pwsh execution alias.
   Under the host's real ConPTY startup the alias exits before readiness
   (`PTY shell exited during startup`). The preset now resolves a real PE first: the MSI layout

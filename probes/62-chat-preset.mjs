@@ -40,9 +40,9 @@ ok(fsRow?.config?.read === true && fsRow?.config?.write === true && fsRow?.confi
 const shellWin = win.plugins.find((p) => p.id === 'persistent-shell').config;
 const shellLinux = linux.plugins.find((p) => p.id === 'persistent-shell').config;
 const dis = (list, id) => list.find((p) => p.id === id)?.disabled === true;
-ok(dis(shellWin, 'terminal-bash') && dis(shellWin, 'persistent-bash'), 'Windows 禁用 bash');
-ok(!dis(shellWin, 'terminal-pwsh') && !dis(shellWin, 'persistent-pwsh'), 'Windows 启用 pwsh');
-ok(!dis(shellLinux, 'terminal-bash') && dis(shellLinux, 'terminal-pwsh'), 'Linux 反过来');
+ok(!shellWin.some((p) => /bash/.test(p.id)), 'Windows 不挂 bash（没有可靠的 bash 可用）');
+ok(!dis(shellWin, 'persistent-pwsh'), 'Windows 启用 pwsh（只留持久会话一条，少一份启动风险）');
+ok(!dis(shellLinux, 'terminal-bash') && dis(shellLinux, 'persistent-pwsh'), 'Linux 反过来');
 
 // 7) 注册：服务缺失或抛错都要安静失败，不能把插件带崩
 let called = 0;
