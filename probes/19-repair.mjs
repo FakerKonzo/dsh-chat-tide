@@ -20,7 +20,7 @@ ok(missed.length === 2, '找出漏抽的轮次', `n=${missed.length}`);
 const complete = async (msgs) => {
   const text = msgs.find((m) => m.role === 'user').content;
   if (text.includes('饼')) return JSON.stringify({ facts: [], events: [{ content: '今天吃了三个饼' }] });
-  return JSON.stringify({ facts: [{ canonicalKey: 'city', value: '杭州' }], events: [] });
+  return JSON.stringify({ facts: [{ canonicalKey: 'city', value: '杭州', evidence: '我住在杭州' }], events: [] });
 };
 
 const rep = await runRepairExtractions(db, { complete, limit: 10, now, log: () => {} });
@@ -46,7 +46,7 @@ const grouped = await runRepairExtractions(db, {
     const text = messages.at(-1).content;
     ok(text.includes('[消息1] 小明 我今天学会了滑冰') && text.includes('[消息2] 小明 我今天去杭州了'), '每条原话带自己的消息编号');
     return JSON.stringify({
-      facts: [{ canonicalKey: 'other.current_city', value: '杭州', speaker: '消息2' }],
+      facts: [{ canonicalKey: 'other.current_city', value: '杭州', evidence: '我今天去杭州了', speaker: '消息2' }],
       events: [{ content: '学会滑冰', speaker: '消息1' }, { content: '归属不明确', speaker: '小明' }],
     });
   },
@@ -63,10 +63,24 @@ for (const storeFacts of [false, true]) {
   let settings = {};
   const result = await runRepairExtractions(db, { now, getExtractSettings: () => settings, complete: async () => {
     settings = { storeFacts, storeEvents: !storeFacts };
-    return JSON.stringify({ facts: [{ canonicalKey: 'city', value: '杭州' }], events: [{ content: '去了西湖' }] });
+    return JSON.stringify({ facts: [{ canonicalKey: 'city', value: '杭州', evidence: '我住在杭州' }], events: [{ content: '去了西湖' }] });
   } });
   ok(result.facts === Number(storeFacts) && result.events === Number(!storeFacts), '补抽按模型返回时的开关分类保存 ' + id);
 }
+appendRawLog(db, {
+  ...groupMessage, userId: 'local:p1', correlationId: 's1:3', recordId: 'bad-correction',
+  observedAt: now, payload: '我最近开始学国际象棋了',
+});
+const forged = await runRepairExtractions(db, {
+  now: now + 1000,
+  complete: async () => JSON.stringify({
+    facts: [{ canonicalKey: 'city', value: '南京', evidence: '我搬到南京了' }],
+  }),
+});
+const savedCity = db.prepare(`SELECT value FROM fact f JOIN fact_version v
+  ON f.fact_id = v.fact_id AND f.current_version = v.version
+  WHERE f.user_id = 'local:p1' AND f.canonical_key = 'city' AND f.status = 'active'`).get();
+ok(forged.facts === 0 && savedCity?.value === '杭州', '补抽不能用编造的证据覆盖已有事实');
 db.close();
 console.log(fail === 0 ? '\n全部通过' : `\n${fail} 项失败`);
 process.exit(fail === 0 ? 0 : 1);

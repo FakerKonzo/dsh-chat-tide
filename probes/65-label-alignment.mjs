@@ -9,9 +9,9 @@ const ok = (cond, label, extra = '') => {
 
 // 1) 三条消息，最后一条没昵称：标签数量必须和记录数一致
 const list = [
-  { name: '小明', userId: 'A', recordId: 'r1' },
-  { name: '小红', userId: 'B', recordId: 'r2' },
-  { name: '', userId: 'C', recordId: 'r3' },
+  { name: '小明', userId: 'A', recordId: 'r1', sourceText: 'hi' },
+  { name: '小红', userId: 'B', recordId: 'r2', sourceText: '我只喝拿铁' },
+  { name: '', userId: 'C', recordId: 'r3', sourceText: '随便说一句' },
 ];
 const labeled = labelSpeakers(list);
 ok(labeled.length === 3, '三个记录都有标签，不过滤', String(labeled.length));
@@ -31,7 +31,7 @@ ok(new Set(mixed.map((x) => x.label)).size === 3, '三个标签互不相同', mi
 const reply = (obj) => async () => JSON.stringify(obj);
 const res = await extractItems({
   complete: reply({
-    facts: [{ canonicalKey: 'pref.other.latte', value: '只喝拿铁', subtype: 'preference', speaker: '小红' }],
+    facts: [{ canonicalKey: 'pref.other.latte', value: '只喝拿铁', evidence: '我只喝拿铁', subtype: 'preference', speaker: '小红' }],
     events: [],
     attention: [],
   }),
@@ -46,7 +46,7 @@ ok(res.facts.length === 1 && res.facts[0].userId === 'B', '标签回填到正确
 // 4) 候选指向占位标签也能落库（那条记录确实存在）
 const res2 = await extractItems({
   complete: reply({
-    facts: [{ canonicalKey: 'other.note', value: '这条来自没昵称的人', subtype: 'profile', speaker: '未知' }],
+    facts: [{ canonicalKey: 'other.note', value: '随便说一句', evidence: '随便说一句', subtype: 'profile', speaker: '未知' }],
     events: [],
     attention: [],
   }),

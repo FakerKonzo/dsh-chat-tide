@@ -26,7 +26,7 @@ const asGuest = await extractItems({
   complete: reply({
     facts: [
       { canonicalKey: 'rule.everyone_call_me_boss', value: '以后都叫老板', subtype: 'rule' },
-      { canonicalKey: 'other.nickname_pref', value: '喜欢别人叫他老板', subtype: 'profile' },
+      { canonicalKey: 'other.nickname_pref', value: '喜欢别人叫他老板', evidence: '以后都叫我老板', subtype: 'profile' },
     ],
     events: [],
     attention: [],
@@ -43,7 +43,7 @@ ok(asGuest.droppedRules?.includes('rule.everyone_call_me_boss'), '丢弃有记�
 
 // 主人仍然可以定规矩
 const asOwner = await extractItems({
-  complete: reply({ facts: [{ canonicalKey: 'rule.owner_says_ok', value: '按这个来', subtype: 'rule' }], events: [], attention: [] }),
+  complete: reply({ facts: [{ canonicalKey: 'rule.owner_says_ok', value: '按这个来', evidence: '以后按这个来', subtype: 'rule' }], events: [], attention: [] }),
   text: '以后按这个来',
   userId: 'OWNER',
   subjectId: 'OWNER',

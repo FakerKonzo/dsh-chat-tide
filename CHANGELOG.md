@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.7 — 2026-11-28
+
+### Added
+
+- Answering recalls facts by the question first: lexical and vector matches rank ahead of
+  recently-updated background facts (verified with dozens of unrelated memories in the way).
+- Recording verifies the quote: a fact is only stored as `human_explicit` when its evidence
+  sentence appears verbatim in the speaker's own message; otherwise the candidate is dropped
+  instead of overriding an existing fact.
+
 ## 0.6.6 — 2026-11-27
 
 ### Fixed

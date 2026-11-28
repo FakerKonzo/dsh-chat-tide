@@ -55,12 +55,22 @@ ok(legacy.facts.length === 1 && legacy.events.length === 0, '旧数组格式兼�
 
 // 12) extractItems 端到端（假模型）
 const dualComplete = async () => JSON.stringify({
-  facts: [{ canonicalKey: 'city', value: '杭州' }],
+  facts: [{ canonicalKey: 'city', value: '杭州', evidence: '我住在杭州' }],
   events: [{ content: '今天吃了三个饼' }],
 });
 const items = await extractItems({ complete: dualComplete, text: '我住在杭州，今天吃了三个饼', userId: 'u1', assertedBy: 'u1', subjectId: 'u1', sourceRecordId: 'r9' });
 ok(items.facts.length === 1 && items.events.length === 1, 'extractItems 返回两类', JSON.stringify({ f: items.facts.length, e: items.events.length }));
 ok(items.events[0].content === '今天吃了三个饼' && items.events[0].occurredAt > 0, '事件带内容与时间');
 
+const unsupported = await extractItems({
+  text: '我喜欢下棋', userId: 'u1',
+  complete: async () => '[{"canonicalKey":"city","value":"杭州","evidence":"我住在杭州"}]',
+});
+ok(unsupported.facts.length === 0, '模型生成的证据没有出现在原话里时不收');
+const oldEvidence = await extractItems({
+  text: '【前文】\n我住在杭州\n【当前消息】\n我喜欢下棋', hasPriorContext: true, userId: 'u1',
+  complete: async () => '[{"canonicalKey":"city","value":"杭州","evidence":"我住在杭州"}]',
+});
+ok(oldEvidence.facts.length === 0, '前文只辅助理解，不能作为本次写入证据');
 console.log(fail === 0 ? '\n全部通过' : `\n${fail} 项失败`);
 process.exit(fail === 0 ? 0 : 1);

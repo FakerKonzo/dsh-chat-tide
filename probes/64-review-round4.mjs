@@ -47,12 +47,12 @@ const owner = await extractItems({
 ok(owner.facts.length === 1, '主人可以定规矩');
 
 // 4) 多人轮：候选没带 speaker 时不能瞎猜归属
-const A = { name: '小明', userId: 'OPENID_A', recordId: 'ra', isOwner: false };
-const B = { name: '小明', userId: 'OPENID_B', recordId: 'rb', isOwner: false };
+const A = { name: '小明', userId: 'OPENID_A', recordId: 'ra', sourceText: '我喝茶', isOwner: false };
+const B = { name: '小明', userId: 'OPENID_B', recordId: 'rb', sourceText: '我只喝拿铁', isOwner: false };
 const mixed = await extractItems({
   complete: reply({
     facts: [
-      { canonicalKey: 'pref.other.coffee', value: '小明#2 只喝拿铁', subtype: 'preference', speaker: '小明#2' },
+      { canonicalKey: 'pref.other.coffee', value: '小明#2 只喝拿铁', evidence: '我只喝拿铁', subtype: 'preference', speaker: '小明#2' },
       { canonicalKey: 'pref.other.tea', value: '有人爱喝茶', subtype: 'preference' },
     ],
     events: [],
@@ -69,12 +69,12 @@ ok(mixed.facts[0]?.userId === B.userId, '带标签的那条归对的人', mixed.
 
 // 5) 单人场景不受影响：没给 speaker 就按唯一那个人算
 const single = await extractItems({
-  complete: reply({ facts: [{ canonicalKey: 'pref.other.coffee', value: '只喝美式', subtype: 'preference' }], events: [], attention: [] }),
+  complete: reply({ facts: [{ canonicalKey: 'pref.other.coffee', value: '只喝美式', evidence: '我只喝美式', subtype: 'preference' }], events: [], attention: [] }),
   text: '我只喝美式',
   userId: 'OPENID_A',
   subjectId: 'OPENID_A',
   speakerName: '小明',
-  speakers: [A],
+  speakers: [{ ...A, sourceText: '我只喝美式' }],
   isOwner: false,
 });
 ok(single.facts.length === 1 && single.facts[0].userId === 'OPENID_A', '单人没标签也能落库');

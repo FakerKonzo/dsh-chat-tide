@@ -7,14 +7,14 @@ const ok = (cond, label, extra = '') => {
   if (!cond) fail++;
 };
 
-const A = { name: '阿甲', userId: 'OPENID_A', recordId: 'raw-a', isOwner: false };
-const B = { name: '阿乙', userId: 'OPENID_B', recordId: 'raw-b', isOwner: false };
+const A = { name: '阿甲', sourceText: '我只喝美式', userId: 'OPENID_A', recordId: 'raw-a', isOwner: false };
+const B = { name: '阿乙', sourceText: '我只喝拿铁', userId: 'OPENID_B', recordId: 'raw-b', isOwner: false };
 
 // 模型按 speaker 分别归属
 const replyBoth = JSON.stringify({
   facts: [
-    { canonicalKey: 'pref.other.coffee', value: '阿甲只喝美式', subtype: 'preference', speaker: '阿甲' },
-    { canonicalKey: 'pref.other.coffee', value: '阿乙只喝拿铁', subtype: 'preference', speaker: '阿乙' },
+    { canonicalKey: 'pref.other.coffee', value: '阿甲只喝美式', evidence: '我只喝美式', subtype: 'preference', speaker: '阿甲' },
+    { canonicalKey: 'pref.other.coffee', value: '阿乙只喝拿铁', evidence: '我只喝拿铁', subtype: 'preference', speaker: '阿乙' },
   ],
   events: [
     { content: '阿甲说今天加班', speaker: '阿甲' },
@@ -65,6 +65,10 @@ const unknown = await run(
 );
 ok(unknown.facts.length === 0, 'speaker 不在名单里就不收');
 
+const swapped = await run(JSON.stringify({ facts: [
+  { canonicalKey: 'pref.other.coffee', value: '喝美式', speaker: '阿乙', evidence: '我只喝美式' },
+] }));
+ok(swapped.facts.length === 0, '引用另一位发言人的真实原话也不能冒领');
 // 单人场景不受影响：不该出现多人提示
 let seenSystem = '';
 await extractItems({
