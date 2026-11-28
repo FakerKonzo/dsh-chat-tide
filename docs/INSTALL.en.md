@@ -62,6 +62,10 @@ Memories live in one SQLite file. Deleting a fact or an event leaves an audit ro
 
 Internal details are in [CONTRIBUTING.md](../CONTRIBUTING.md).
 
+### PowerShell for chat sessions
+
+On Windows the chat preset's terminal looks for a **real** PowerShell 7 install: `C:\Program Files\PowerShell\7` (MSI/winget) first, then `~/.dsh/tide/pwsh7/pwsh.exe` (zip copy, extract the official zip there). The Microsoft Store build works on the command line, but its 0-byte execution alias fails under the host terminal with `PTY shell exited during startup` — install one of the two layouts above when you see that.
+
 ### Silent replies and session repair
 
 With the silence gate enabled, Tide waits for each model step to finish before sending its text. If the step calls `run_code`, Tide forwards the tool call and drops that step's interim text. A later step can send the final reply.

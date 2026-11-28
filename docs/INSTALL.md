@@ -62,6 +62,10 @@ Tide 是 DSH 的聊天记忆插件。这份文档讲怎么装、怎么配、怎�
 
 开发和排查的内部细节见 [CONTRIBUTING.md](../CONTRIBUTING.md)。
 
+### 聊天会话的 PowerShell
+
+Windows 上聊天预设里的终端默认找 PowerShell 7 的**真实安装**：先看 `C:\Program Files\PowerShell\7`（MSI/winget 版），再看 `~/.dsh/tide/pwsh7/pwsh.exe`（zip 版，把官方 zip 解压到这里即可）。Microsoft Store 版命令行能用，但它的 0 字节启动别名在宿主终端里会报 `PTY shell exited during startup`——遇到这个报错就装上面两种之一。
+
 ### 拒答和会话修复
 
 启用静默保护时，Tide 会等当前一步结束再发送正文。如果这一步调用了 `run_code`，Tide 会保留工具调用，略过同一步的过渡文字。正常回答在后续步骤发送，经工具决定拒答时，群里看不到这段过渡文字。

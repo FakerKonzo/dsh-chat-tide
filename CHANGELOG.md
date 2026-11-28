@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+_Work in progress. Published as part of the next release; see RELEASE.md for what triggers one._
+
+### Fixed
+
+- The chat preset no longer points the terminal at the Microsoft Store pwsh execution alias.
+  Under the host's real ConPTY startup the alias exits before readiness
+  (`PTY shell exited during startup`). The preset now resolves a real PE first: the MSI layout
+  under `C:\Program Files\PowerShell\7`, then a zip copy under `~/.dsh/tide/pwsh7` (documented
+  in INSTALL.md for machines without admin rights).
+
 ## 0.6.7 — 2026-11-28
 
 ### Added
